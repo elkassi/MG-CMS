@@ -1,0 +1,46 @@
+HELP.md
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+node_modules
+# Added by code-review-graph
+.code-review-graph/
+
+### Frontend build artifacts ###
+src/main/resources/static/bundle.js
+src/main/resources/static/bundle.js.map
+src/main/resources/static/bundle.js.LICENSE.txt
+src/main/resources/static/main.css
+src/main/resources/static/main.css.map
+
+# Graphify knowledge-graph output (local dev tool)
+graphify-out/

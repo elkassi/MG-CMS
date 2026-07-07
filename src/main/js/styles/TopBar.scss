@@ -1,0 +1,108 @@
+/* Branded application top bar (see TopBar.js). */
+.appbar {
+    position: sticky;
+    top: 0;
+    z-index: 900;
+    height: var(--topbar-h, 52px);
+    display: flex;
+    align-items: center;
+    gap: var(--space-4, 16px);
+    padding: 0 var(--space-4, 16px) 0 var(--space-5, 24px);
+    background: var(--surface, #fff);
+    border-bottom: 1px solid var(--border, #e5e7eb);
+    box-shadow: var(--shadow-1, 0 1px 2px rgba(16, 24, 40, 0.06));
+    font-family: var(--font-sans, 'Segoe UI', system-ui, sans-serif);
+
+    .appbar-burger {
+        border: none;
+        background: transparent;
+        color: var(--text-muted, #6b7280);
+        font-size: 18px;
+        cursor: pointer;
+        padding: 6px 8px;
+        border-radius: var(--radius-sm, 6px);
+        transition: all 0.15s ease;
+
+        &:hover { color: var(--accent, #ca0c0c); background: var(--surface-2, #fbfcfd); }
+    }
+
+    .appbar-brand {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3, 12px);
+        min-width: 0;
+    }
+
+    .appbar-logo {
+        height: 26px;
+        width: auto;
+        object-fit: contain;
+    }
+
+    .appbar-title {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.1;
+        border-left: 2px solid var(--accent, #ca0c0c);
+        padding-left: var(--space-3, 12px);
+
+        .appbar-product {
+            font-size: var(--fs-md, 14px);
+            font-weight: 700;
+            color: var(--text, #1f2933);
+        }
+        .appbar-sub {
+            font-size: var(--fs-xs, 11px);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--text-muted, #6b7280);
+        }
+    }
+
+    .appbar-crumbs {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2, 8px);
+        font-size: var(--fs-sm, 12px);
+        color: var(--text-muted, #6b7280);
+
+        .appbar-crumb-root { font-weight: 600; }
+        .appbar-crumb-sep { font-size: 9px; opacity: 0.6; }
+        .appbar-crumb-current { color: var(--text, #1f2933); font-weight: 600; }
+    }
+
+    .appbar-right {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: var(--space-3, 12px);
+
+        .appbar-user {
+            font-size: var(--fs-sm, 12px);
+            color: var(--text, #1f2933);
+            font-weight: 600;
+        }
+
+        .appbar-logout {
+            border: 1px solid var(--border, #e5e7eb);
+            background: var(--surface, #fff);
+            color: var(--text-muted, #6b7280);
+            border-radius: var(--radius-sm, 6px);
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+
+            &:hover {
+                color: var(--text-on-accent, #fff);
+                background: var(--accent, #ca0c0c);
+                border-color: var(--accent, #ca0c0c);
+            }
+        }
+    }
+}
+
+/* Hide breadcrumb middle on narrow screens. */
+@media (max-width: 720px) {
+    .appbar .appbar-crumbs { display: none; }
+}

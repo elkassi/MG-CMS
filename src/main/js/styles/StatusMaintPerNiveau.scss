@@ -1,0 +1,117 @@
+.hover-elem {
+    &:hover {
+        // change the brightness of the element on hover
+        // filter: brightness(0.9);
+        cursor: pointer;
+    }
+}
+
+.table-maint {
+
+    & th,
+    & td {
+        font-size: 25;
+    }
+}
+
+.table-splice {
+
+    & th,
+    & td {
+        font-size: 15;
+        padding: 0.4rem;
+    }
+}
+
+.table-calibrage {
+
+    & th,
+    & td {
+        font-size: 15;
+        padding: 0.4rem;
+    }
+}
+
+.crud-tooltip {
+    position: relative;
+    display: inline-block;
+    padding: 0;
+    // z-index: 7;
+    .crud-tooltiptext {
+        visibility: hidden;
+        width: 300px;
+        background-color: black;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px;
+        font-size: 15;
+        position: absolute;
+        z-index: 8;
+        top: 100%;
+        left: 50%;
+        margin-left: -150px;
+
+    }
+
+
+}
+
+.crud-tooltip:hover .crud-tooltiptext {
+    visibility: visible;
+}
+
+.crud-tooltip:hover .crud-tooltiptext-2 {
+    visibility: visible;
+}
+
+
+.triangle {
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0 50px 100px 50px; /* Adjust the values as needed */
+    border-color: transparent transparent #007bff transparent; /* Triangle color */
+}
+
+.up {
+    width: 0;
+    height: 0;
+    border-style: inset;
+    border-width: 20px 35px 0 35px;
+    border-color: #ffb451 transparent transparent transparent;
+    position: relative;
+    display: inline-block;
+}
+
+.up p {
+    text-align: center;
+    top: -19;
+    left: -47;
+    font-size: 10;
+    position: absolute;
+    width: 93px;
+    height: 93px;
+    margin: 0;
+    font-weight: bold;
+    color: white;
+    letter-spacing: -1;
+    line-height: 0.7;
+}
+
+.circle-div {
+    width: 20;
+    height: 20;
+    border-radius: 50%;
+    background-color: #3900f3;
+    font-size: 10;
+    letter-spacing: -1;
+    line-height: 0.7;
+    font-weight: bold;
+    color: white;
+    position: absolute;
+    bottom: -6;
+    right: -15;
+    padding-top: 6;
+}
+

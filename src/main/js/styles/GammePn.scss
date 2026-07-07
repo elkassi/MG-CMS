@@ -1,0 +1,97 @@
+.gamme-emp {
+    &:hover {
+        cursor: pointer;
+    }
+    
+    &:hover polyline{
+        cursor: pointer;
+        stroke: rgb(140, 140, 255);
+        stroke-width: 2;
+    }
+}
+
+.gamme-header-elem {
+    //textAlign: "center", border: "1px black solid", fontWeight: "bold"
+    text-align: center;
+    border: 1px black solid;
+    font-weight: 900;
+    font-size: 14;
+    justify-content: center;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.gamme-text-editor {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 8px 0;
+    padding: 8px 10px;
+    border: 1px solid #c8ced6;
+    background: #f7f9fb;
+    color: #1f2a37;
+    font-size: 13px;
+}
+
+.gamme-text-editor-empty {
+    color: #667085;
+}
+
+.gamme-text-editor-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.gamme-text-piece {
+    display: flex;
+    flex-direction: column;
+    min-width: 120px;
+    line-height: 1.1;
+}
+
+.gamme-text-piece span {
+    color: #667085;
+    font-size: 11px;
+}
+
+.gamme-text-editor-grid {
+    display: grid;
+    grid-template-columns: minmax(120px, 180px) minmax(180px, 260px) repeat(3, 72px) 86px 74px 42px 92px 38px;
+    gap: 6px;
+    align-items: center;
+}
+
+.gamme-text-editor-grid input,
+.gamme-text-editor-grid select {
+    height: 30px;
+    min-width: 0;
+    border: 1px solid #c8ced6;
+    background: white;
+    color: #1f2a37;
+    padding: 3px 6px;
+}
+
+.gamme-text-editor-grid label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    color: #475467;
+    white-space: nowrap;
+}
+
+.gamme-text-editor-grid label input[type="number"] {
+    width: 48px;
+}
+
+.gamme-text-editor-grid input[type="color"] {
+    padding: 2px;
+}
+
+.gamme-text-checkbox {
+    justify-content: center;
+}

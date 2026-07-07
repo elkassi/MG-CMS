@@ -1,0 +1,33 @@
+.user-table {
+    max-height: calc(100vh - 142px);
+
+    .user-table-header {
+        background-color: #ca0c0c;
+        color: white;
+        position: sticky;
+        top: 0;
+
+        &>tr>th {
+            border-top-width: 0;
+            border-bottom-width: 0;
+        }
+    }
+}
+
+.page-link {
+    color: #ff0000;
+    &:hover {
+        color: #b30000;
+    }
+}
+
+.page-item.active .page-link {
+    background-color: #ff0000;
+    border-color: #ff0000;
+    color: #fff;
+}
+
+.pagination {
+    margin: 0
+}
+

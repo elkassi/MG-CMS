@@ -1,0 +1,405 @@
+// ProcessDispatcher.scss — visual language matching PlanDeCharge.scss.
+// Lear red accent (#EE3124), light grey panels, rounded cards, soft shadows.
+
+.disp-container {
+    padding: 20px;
+    background-color: #ffffff;
+    min-height: 100vh;
+    color: #222222;
+}
+
+.disp-header {
+    margin-bottom: 20px;
+    margin-left: 55px;
+
+    h1 {
+        color: #222222;
+        font-size: 1.8rem;
+        font-weight: 600;
+        margin: 0;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #EE3124;
+    }
+
+    .disp-subtitle {
+        color: #666;
+        font-size: 0.9rem;
+        margin-top: 6px;
+    }
+}
+
+.disp-controls {
+    background: #f5f5f5;
+    border-radius: 8px;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: flex-end;
+    gap: 15px;
+    flex-wrap: wrap;
+
+    .disp-form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+
+        label {
+            font-size: 0.85rem;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input, select {
+            padding: 8px 12px;
+            border: 1px solid #cccccc;
+            border-radius: 4px;
+            background: #ffffff;
+            color: #222;
+            font-size: 0.9rem;
+            min-width: 160px;
+
+            &:focus {
+                outline: none;
+                border-color: #EE3124;
+            }
+        }
+    }
+}
+
+.disp-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+
+    &:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+    }
+
+    &.disp-btn-preview {
+        background: #EE3124;
+        color: #fff;
+
+        &:hover:not(:disabled) { background: #c8251a; }
+    }
+
+    &.disp-btn-publish {
+        background: #28a745;
+        color: #fff;
+
+        &:hover:not(:disabled) { background: #218838; }
+    }
+}
+
+.disp-alert {
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    &.disp-alert-info {
+        background: #e8f4ff;
+        color: #1a5490;
+        border-left: 4px solid #2196f3;
+    }
+    &.disp-alert-error {
+        background: #ffebee;
+        color: #c62828;
+        border-left: 4px solid #f44336;
+    }
+    &.disp-alert-success {
+        background: #e8f5e9;
+        color: #2e7d32;
+        border-left: 4px solid #4caf50;
+    }
+}
+
+.disp-action-panel {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.disp-action-card {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-left: 4px solid #6c757d;
+    border-radius: 6px;
+    padding: 12px 14px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.disp-action-title {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    color: #666;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    margin-bottom: 4px;
+}
+
+.disp-action-value {
+    font-size: 1rem;
+    color: #222;
+    font-weight: 700;
+}
+
+.disp-action-detail {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 4px;
+}
+
+.disp-action-danger { border-left-color: #dc3545; }
+.disp-action-warn { border-left-color: #fd7e14; }
+.disp-action-info { border-left-color: #0d6efd; }
+.disp-action-ok { border-left-color: #28a745; }
+
+// Stats cards row
+.disp-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+
+    .disp-stat-card {
+        background: #fff;
+        border-radius: 8px;
+        padding: 16px 18px;
+        border-left: 4px solid #EE3124;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+        .disp-stat-label {
+            font-size: 0.78rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 4px;
+        }
+        .disp-stat-value {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #222;
+            line-height: 1;
+        }
+        .disp-stat-sub {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        &.disp-stat-warn { border-left-color: #ffc107; }
+        &.disp-stat-ok   { border-left-color: #28a745; }
+    }
+}
+
+// Zone cards
+.disp-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+
+    @media (max-width: 1024px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.disp-section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #222;
+    margin: 0 0 12px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.disp-zone-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+}
+
+.disp-zone-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #eee;
+    transition: box-shadow 0.15s ease;
+
+    &:hover {
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    }
+
+    .disp-zone-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+
+        .disp-zone-name {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #222;
+        }
+    }
+
+    .disp-zone-count {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #EE3124;
+        line-height: 1;
+        margin-bottom: 8px;
+    }
+
+    .disp-zone-count-label {
+        font-size: 0.75rem;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+    }
+
+    .disp-seq-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 10px;
+        max-height: 110px;
+        overflow-y: auto;
+        padding: 4px;
+        background: #f9f9f9;
+        border-radius: 4px;
+    }
+
+    .disp-seq-pill {
+        font-family: 'Courier New', monospace;
+        font-size: 0.72rem;
+        background: #fff;
+        border: 1px solid #ddd;
+        padding: 2px 6px;
+        border-radius: 3px;
+        color: #444;
+    }
+}
+
+// Category badges
+.disp-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+
+    &.disp-badge-strict {
+        background: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeeba;
+    }
+    &.disp-badge-shared {
+        background: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+    }
+}
+
+// Unassignable panel
+.disp-unassignable {
+    background: #fff;
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #eee;
+
+    .disp-unassignable-empty {
+        text-align: center;
+        color: #28a745;
+        padding: 30px 10px;
+        font-size: 0.9rem;
+    }
+
+    .disp-unassignable-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        max-height: 480px;
+        overflow-y: auto;
+    }
+
+    .disp-unassignable-item {
+        padding: 10px;
+        border-bottom: 1px solid #f1f1f1;
+
+        &:last-child { border-bottom: none; }
+
+        .disp-unassignable-seq {
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #c62828;
+        }
+        .disp-unassignable-reason {
+            display: block;
+            margin-top: 4px;
+            font-size: 0.75rem;
+            color: #666;
+
+            .disp-reason-code {
+                font-family: 'Courier New', monospace;
+                background: #ffebee;
+                color: #c62828;
+                padding: 1px 5px;
+                border-radius: 3px;
+                margin-right: 6px;
+                font-size: 0.7rem;
+            }
+        }
+    }
+}
+
+.disp-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #888;
+
+    .disp-empty-icon {
+        font-size: 2.5rem;
+        color: #ddd;
+        margin-bottom: 12px;
+    }
+    .disp-empty-text {
+        font-size: 0.95rem;
+    }
+}
+
+.disp-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    gap: 10px;
+    color: #888;
+    font-size: 0.9rem;
+}
+
+// Heatmap imbalance pulse animation
+@keyframes pulse-red {
+    0% { box-shadow: inset 0 0 0 0 rgba(244,67,54,0); }
+    50% { box-shadow: inset 0 0 0 3px rgba(244,67,54,0.35); }
+    100% { box-shadow: inset 0 0 0 0 rgba(244,67,54,0); }
+}

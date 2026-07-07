@@ -1,0 +1,23 @@
+<html xmlns:th="https://www.thymeleaf.org">
+<head lang="en">
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, width=device-width">
+    <link rel="icon" href="/static/lear_logo_mini.png">
+    <title>Lear — Trim Tangier · Cutting Management</title>
+</head>
+<body>
+    <div id="root"></div>
+    <div id="loading" style="display: flex; align-items: center; justify-content: center; height: 100%">
+        <!-- Loading page content -->
+        <img src="/static/lear_logo_big.png" style="margin-bottom : 100; height: 200"/>
+    </div>
+    <script>
+        // Hide the loading page when the React app finishes loading
+        window.addEventListener('load', function() {
+            var loadingDiv = document.getElementById('loading');
+            loadingDiv.style.display = 'none';
+        });
+    </script>
+    <script th:src="@{/bundle.js(version=25.06.2026v2)}"></script>
+</body>
+</html>

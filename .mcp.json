@@ -1,0 +1,41 @@
+{
+  "mcpServers": {
+    "code-review-graph": {
+      "command": "uvx",
+      "args": [
+        "code-review-graph",
+        "serve"
+      ],
+      "type": "stdio"
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@0.0.73",
+        "--browser",
+        "msedge",
+        "--headless",
+        "--isolated",
+        "--output-dir",
+        "d:\\work\\LEAR\\MG-CMS\\.playwright-mcp"
+      ],
+      "type": "stdio"
+    },
+    "mssql-prod-reader": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@esetnik/mssql-mcp-reader@0.1.0"
+      ],
+      "type": "stdio",
+      "env": {
+        "SERVER_NAME": "MSI\\SQLEXPRESS",
+        "DATABASE_NAME": "LEAR_MG_CMS_Prod",
+        "SQL_CONNECTION_STRING": "Driver={ODBC Driver 17 for SQL Server};Server=MSI\\SQLEXPRESS;Database=LEAR_MG_CMS_Prod;Trusted_Connection=Yes;Encrypt=No;TrustServerCertificate=Yes;Connection Timeout=60;",
+        "SQL_DRIVER": "msnodesqlv8",
+        "REQUEST_TIMEOUT": "300"
+      }
+    }
+  }
+}

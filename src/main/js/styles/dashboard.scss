@@ -1,0 +1,376 @@
+@use "./sass-color-compat" as *;
+
+// LEAR Brand Colors
+$lear-red: #ee3124;
+$lear-light-gray: #f5f5f5;
+$lear-black: #000000;
+$lear-white: #ffffff;
+$lear-dark-gray: #2c2c2c;
+$lear-border-gray: #e1e5e9;
+
+* {
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.3px;
+}
+
+.page-container {
+  display: flex;
+  height: 100vh;
+  font-size: 14px;
+  background-color: $lear-light-gray;
+
+  .dashboard-container {
+    width: 300px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(180deg, $lear-white 0%, darken($lear-white, 2%) 100%);
+    box-shadow: 2px 0 12px rgba($lear-black, 0.08);
+    z-index: 10;
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden; // Ensure no horizontal overflow
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid $lear-border-gray;
+
+    .dashboard-logo {
+      padding: 20px 0 15px;
+      background: linear-gradient(135deg, $lear-dark-gray 0%, lighten($lear-dark-gray, 10%) 100%);
+      border-bottom: 3px solid $lear-red;
+      margin-bottom: 10px;
+      position: relative;
+
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: -3px;
+        left: 20%;
+        width: 60%;
+        height: 3px;
+        background: linear-gradient(90deg, transparent 0%, $lear-red 50%, transparent 100%);
+      }
+
+      &>img {
+        margin: 0 auto;
+        display: block;
+        filter: brightness(0) invert(1);
+        transition: all 0.3s ease;
+
+        &:hover {
+          cursor: pointer;
+          transform: scale(1.05);
+          filter: brightness(0) invert(1) drop-shadow(0 2px 4px rgba($lear-red, 0.3));
+        }
+      }
+    }
+
+    .dashboard-section {
+      margin-bottom: 4px; // Reduced from 8px
+      
+      .dashboard-elem {
+        padding: 12px 16px; // Reduced from 16px 20px
+        display: flex;
+        align-items: center;
+        font-weight: 600;
+        font-size: 13px; // Reduced from 14px
+        text-decoration: none;
+        color: $lear-dark-gray;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-left: 3px solid transparent; // Reduced from 4px
+        margin: 1px 0; // Reduced from 2px 0
+        position: relative;
+        overflow: hidden;
+
+        &::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 0;
+          height: 100%;
+          background: linear-gradient(90deg, rgba($lear-red, 0.1) 0%, rgba($lear-red, 0.05) 100%);
+          transition: width 0.3s ease;
+        }
+
+        &:hover {
+          background-color: rgba($lear-red, 0.05);
+          border-left-color: $lear-red;
+          color: $lear-red;
+          cursor: pointer;
+          // Removed transform to prevent horizontal scrollbar
+          // transform: translateX(4px);
+
+          &::before {
+            width: 100%;
+          }
+
+          .fa-solid {
+            transform: scale(1.05); // Reduced from 1.1
+          }
+        }
+
+        &[style*="color: #ca0c0c"], 
+        &[style*="color:#ca0c0c"] {
+          background-color: rgba($lear-red, 0.08) !important;
+          border-left-color: $lear-red !important;
+          color: $lear-red !important;
+          font-weight: 700;
+
+          &::before {
+            width: 100%;
+          }
+        }
+
+        .fa-solid {
+          font-size: 16px; // Reduced from 18px
+          margin-right: 10px; // Reduced from 12px
+          transition: all 0.3s ease;
+          color: inherit;
+        }
+
+        span {
+          flex: 1;
+          font-size: 13px; // Reduced from 14px
+        }
+
+        .fa-angle-down,
+        .fa-angle-up {
+          font-size: 12px; // Reduced from 14px
+          margin-left: 6px; // Reduced from 8px
+          transition: transform 0.3s ease;
+        }
+
+        .fa-angle-down {
+          transform: rotate(0deg);
+        }
+
+        .fa-angle-up {
+          transform: rotate(180deg);
+        }
+      }
+
+      .dashboard-subelem-list {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        background-color: rgba($lear-light-gray, 0.3);
+        border-left: 3px solid rgba($lear-red, 0.2); // Reduced from 4px
+
+        .dashboard-subelem-listelem {
+          text-decoration: none;
+          display: flex;
+          align-items: center;
+          padding: 8px 16px 8px 36px; // Reduced from 12px 20px 12px 48px
+          color: lighten($lear-dark-gray, 10%);
+          font-size: 12px; // Reduced from 13px
+          font-weight: 500;
+          transition: all 0.3s ease;
+          border-bottom: 1px solid rgba($lear-border-gray, 0.5);
+          position: relative;
+          overflow: hidden; // Prevent horizontal overflow
+
+          &::before {
+            content: '';
+            position: absolute;
+            left: 24px; // Adjusted position
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px; // Reduced from 6px
+            height: 4px; // Reduced from 6px
+            background-color: rgba($lear-red, 0.4);
+            border-radius: 50%;
+            transition: all 0.3s ease;
+          }
+
+          &:hover {
+            background-color: rgba($lear-red, 0.08);
+            color: $lear-red;
+            cursor: pointer;
+            // Removed translateX to prevent horizontal scrollbar
+            // padding-left: 52px;
+
+            &::before {
+              background-color: $lear-red;
+              transform: translateY(-50%) scale(1.2); // Reduced from 1.3
+            }
+          }
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          span {
+            flex: 1;
+            line-height: 1.3; // Reduced from 1.4
+          }
+        }
+      }
+    }
+
+    .dashboard-bottom {
+      margin-top: auto;
+      background: linear-gradient(135deg, $lear-dark-gray 0%, lighten($lear-dark-gray, 5%) 100%);
+      border-top: 3px solid $lear-red;
+      box-shadow: 0 -4px 12px rgba($lear-black, 0.1);
+
+      .dashboard-bottom-elem {
+        white-space: nowrap;
+        padding: 12px 16px; // Reduced from 16px 20px
+        color: $lear-white;
+        font-weight: 600;
+        font-size: 13px; // Reduced from 14px
+        transition: all 0.3s ease;
+        border-bottom: 1px solid rgba($lear-white, 0.1);
+        display: flex;
+        align-items: center;
+        overflow: hidden; // Prevent horizontal overflow
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        &:hover {
+          background-color: rgba($lear-red, 0.2);
+          cursor: pointer;
+          // Removed transform to prevent horizontal scrollbar
+          // transform: translateX(4px);
+
+          .fa-solid {
+            color: $lear-red;
+            transform: scale(1.05); // Reduced from 1.1
+          }
+        }
+
+        .fa-solid {
+          font-size: 14px; // Reduced from 16px
+          margin-right: 10px; // Reduced from 12px
+          transition: all 0.3s ease;
+        }
+      }
+    }
+
+    // Additional styling for better visual hierarchy
+    .dashboard-scrollable-content {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden; // Hide horizontal scrollbar
+      padding-bottom: 10px;
+    }
+
+    // Section grouping
+    .dashboard-section + .dashboard-section {
+      border-top: 1px solid rgba($lear-border-gray, 0.2); // Made more subtle
+      padding-top: 4px; // Reduced from 8px
+      margin-top: 2px; // Added small margin
+    }
+
+    // Animation for menu items
+    .dashboard-section {
+      animation: slideInFromLeft 0.3s ease-out;
+    }
+
+    @keyframes slideInFromLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    // Loading state for menu items
+    .dashboard-elem.loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    // Enhanced focus states for accessibility
+    .dashboard-elem:focus,
+    .dashboard-subelem-listelem:focus {
+      outline: 2px solid $lear-red;
+      outline-offset: 2px;
+    }
+  }
+
+  .dashboard-barsbtn {
+    padding: 12px;
+    font-size: 20px;
+    background: linear-gradient(135deg, $lear-red 0%, darken($lear-red, 10%) 100%);
+    color: $lear-white;
+    position: absolute;
+    top: 20px;
+    left: 300px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 0 12px 12px 0;
+    z-index: 20;
+    border: none;
+    box-shadow: 2px 2px 8px rgba($lear-black, 0.15);
+
+    &:hover {
+      background: linear-gradient(135deg, darken($lear-red, 5%) 0%, darken($lear-red, 15%) 100%);
+      cursor: pointer;
+      transform: translateX(4px);
+      box-shadow: 4px 4px 12px rgba($lear-black, 0.2);
+    }
+
+    &:active {
+      transform: translateX(2px);
+    }
+  }
+
+  .content-container {
+    width: calc(100vw - 300px);
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 100vh;
+    overflow-y: auto;
+    background-color: $lear-light-gray;
+  }
+}
+
+// Enhanced scrollbar styling
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba($lear-light-gray, 0.5);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba($lear-red, 0.6) 0%, rgba($lear-red, 0.8) 100%);
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, $lear-red 0%, darken($lear-red, 10%) 100%);
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .page-container {
+    .dashboard-container {
+      position: fixed;
+      z-index: 1000;
+      transform: translateX(-100%);
+      
+      &.show {
+        transform: translateX(0);
+      }
+    }
+    
+    .content-container {
+      width: 100vw;
+    }
+    
+    .dashboard-barsbtn {
+      left: 20px;
+    }
+  }
+}

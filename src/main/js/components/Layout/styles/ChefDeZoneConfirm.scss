@@ -1,0 +1,209 @@
+/* Chef-de-zone shift confirmation page */
+
+.cz-confirm-page {
+    .cz-title-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+
+        h3 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.4rem;
+        }
+    }
+
+    .cz-readonly-badge {
+        background: #6c757d;
+        color: #fff;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .cz-controls {
+        display: flex;
+        gap: 12px;
+        align-items: flex-end;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+
+        .cz-control {
+            display: flex;
+            flex-direction: column;
+            min-width: 110px;
+
+            label {
+                font-size: 0.75rem;
+                color: #6c757d;
+                margin-bottom: 2px;
+            }
+
+            input.form-control,
+            select.form-control {
+                font-size: 0.85rem;
+                padding: 4px 8px;
+            }
+        }
+
+        .cz-zone-control { min-width: 220px; }
+    }
+
+    .cz-state-banner {
+        padding: 10px 14px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        b { font-weight: 700; }
+        i { font-style: italic; color: inherit; }
+
+        &.cz-state-preview {
+            background: #fff3cd;
+            color: #664d03;
+            border: 1px solid #ffe69c;
+
+            svg { color: #997404; }
+        }
+
+        &.cz-state-confirmed {
+            background: #d1e7dd;
+            color: #0a3622;
+            border: 1px solid #a3cfbb;
+
+            svg { color: #146c43; }
+        }
+    }
+
+    .cz-bulk-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 8px;
+
+        .cz-count {
+            margin-right: auto;
+            font-size: 0.85rem;
+            color: #495057;
+
+            b { color: #198754; font-size: 1rem; }
+        }
+
+        button {
+            font-size: 0.78rem;
+            padding: 3px 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+    }
+
+    .cz-machines-table {
+        font-size: 0.85rem;
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.8rem;
+        }
+
+        td { vertical-align: middle; }
+
+        .cz-mch-name {
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+
+            svg { color: #adb5bd; font-size: 0.75rem; }
+        }
+
+        .cz-mch-type {
+            color: #6c757d;
+            font-size: 0.78rem;
+        }
+
+        .cz-prefill {
+            text-align: center;
+
+            .cz-icon-good { color: #198754; }
+            .cz-icon-bad  { color: #dc3545; }
+        }
+
+        .cz-checkbox-cell {
+            text-align: center;
+
+            input[type="checkbox"] {
+                width: 18px;
+                height: 18px;
+                cursor: pointer;
+            }
+
+            input[type="checkbox"]:disabled {
+                cursor: not-allowed;
+                opacity: 0.5;
+            }
+        }
+
+        .cz-row-drift {
+            background: #fff8e1;
+        }
+
+        .cz-drift-badge {
+            margin-left: 6px;
+            color: #997404;
+            font-size: 1rem;
+        }
+    }
+
+    /* Status code badge */
+    .cz-status {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        font-family: monospace;
+        min-width: 28px;
+        text-align: center;
+    }
+
+    .cz-status-none {
+        background: transparent;
+        color: #adb5bd;
+        font-style: italic;
+    }
+
+    .cz-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 14px;
+
+        button {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+    }
+
+    .cz-loading,
+    .cz-empty {
+        color: #6c757d;
+        font-style: italic;
+        padding: 20px;
+        text-align: center;
+    }
+}

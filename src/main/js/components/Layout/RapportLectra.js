@@ -1,0 +1,1672 @@
+import { faPlayCircle, faPlay, faPause, faCommentsDollar, faStop, faLocationCrosshairs, faArrowRight, faArrowLeft, faEarthAsia, faEye, faFileCsv, faChartPie, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
+import axios from 'axios';
+import moment from 'moment';
+import React, { Component } from 'react'
+import Select from "react-select";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import "../../styles/RapportLectra.scss";
+import { Modal } from 'react-bootstrap'
+import { departementOption, problemeResoluOption } from '../../metadata';
+import FormCoupe from './FormCoupe';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+
+export default class RapportLectra extends Component {
+
+	constructor() {
+		super();
+		this.cancelTokenSource = axios.CancelToken.source();
+		this.state = {
+			productionTableArr: [],
+			machineObj: {},
+			date: moment().add(2, 'hours').format('YYYY-MM-DD'),
+			shift: this.getShift(moment().add(2, 'hours')),
+			zoneArr: [],
+			machineArr: [],
+			data: {},
+			date1: null,
+			date2: null,
+			selectedZone: null,
+			selectedMachine: [],
+			placements: {},
+			series: {},
+			interruptions: {},
+			xplSeries: {}, // XPL scanned series lookup
+			codeErreurList: [],
+			codeArretList: [],
+			codeDefautList: [],
+			intervention: null,
+			showGraph: false,
+		}
+	}
+
+	componentWillUnmount() {
+		this.stopLoop(); // Stop the loop when the component is unmounted or navigating away
+		this.cancelTokenSource.cancel('Component unmounted');
+	}
+
+	getShift(date) {
+		let hour = date.hour()
+		if (hour >= 0 && hour < 8) {
+			return 1
+		} else if (hour >= 8 && hour < 16) {
+			return 2
+		} else {
+			return 3
+		}
+	}
+
+	isDateInAdjustmentRange = () => {
+		return this.state.date >= "2026-02-18" && this.state.date <= "2026-03-20"
+	}
+
+	sumTwonumber(a, b) {
+
+	}
+
+	componentDidMount() {
+
+		let shift = this.state.shift
+		let date1;
+		let date2;
+		let date = this.state.date
+		if (shift === 1) {
+			date1 = moment(date).subtract(1, 'day').format('YYYY-MM-DD 21:55');
+			date2 = moment(date).format('YYYY-MM-DD 05:45');
+		} else if (shift === 2) {
+			date1 = moment(date).format('YYYY-MM-DD 05:55');
+			if (moment(date).day() === 5) {
+				date2 = moment(date).format('YYYY-MM-DD 13:30');
+			} else {
+				date2 = moment(date).format('YYYY-MM-DD 13:45');
+			}
+		} else if (shift === 3) {
+			if (moment(date).day() === 5) {
+				date1 = moment(date).format('YYYY-MM-DD 14:05');
+			} else {
+				date1 = moment(date).format('YYYY-MM-DD 13:55');
+			}
+			date2 = moment(date).format('YYYY-MM-DD 21:45');
+		}
+
+		this.setState({ date1, date2 })
+		axios.get(`/api/productionTable/list`)
+			.then(res => {
+				let zoneArr = [];
+				res.data.forEach(element => {
+					if (!zoneArr.includes(element.zone.nom)) {
+						zoneArr.push(element.zone.nom);
+					}
+				});
+				this.setState({
+					zoneArr,
+					productionTableArr: res.data
+				});
+			})
+			.catch(error => this.setState({ error, productionTableArr: [] }));
+
+		axios.get("/api/codeErreur/list")
+			.then(res => {
+				this.setState({ codeErreurList: res.data })
+			})
+		axios.get("/api/codeArret/list")
+			.then(res => {
+				this.setState({ codeArretList: res.data })
+			})
+		axios.get("/api/codeDefaut/list")
+			.then(res => {
+				this.setState({ codeDefautList: res.data })
+			})
+
+	}
+
+	startLoop() {
+		if (this.loopInterval) {
+			clearInterval(this.loopInterval);
+		}
+		this.getData()
+		this.loopInterval = setInterval(() => {
+			// Your loop code goes here
+			this.getData()
+		}, 60000);
+	}
+
+	stopLoop() {
+		clearInterval(this.loopInterval);
+	}
+
+	getData = () => {
+		this.cancelTokenSource.cancel('New request initiated');
+		this.cancelTokenSource = axios.CancelToken.source();
+
+
+		axios.get(`/api/coupeMachineHistory/filter`, {
+			params: {
+				date: this.state.date,
+				shift: this.state.shift,
+				machines: this.state.machineArr.map((e) => e.nom).join(','),
+			},
+			cancelToken: this.cancelTokenSource.token, // Pass the cancel token
+		})
+			.then(res => {
+				// let resultObj = this.getIndicatorsFromMachineData(res.data)
+				let obj = {}
+				this.state.machineArr.forEach(machine => {
+					obj[machine.nom] = res.data.filter(element => element.machine === machine.nom)
+				})
+
+				this.setState({
+					data: obj,
+				})
+				let placementArr = []
+				let seriesArr = []
+				let interruptionArr = []
+				res.data.filter(e => e.type !== "PieceCut").map(e => {
+					if (["Start", "End"].includes(e.type) && e.extra != null && e.extra.length > 0 && !seriesArr.includes(e.extra) && this.state.series[e.extra] === undefined) {
+						seriesArr.push(e.extra)
+					}
+					if (e.placement && !placementArr.includes(e.placement.replace(", aborted=False", "")) && this.state.placements[e.placement.replace(", aborted=False", "")] === undefined) {
+						placementArr.push(e.placement.replace(", aborted=False", ""))
+					}
+					if (["InterruptionCoupeOut", "StartPositioning", "StopPositioning"].includes(e.type) && e.extra != null && e.extra.length > 0 && !interruptionArr.includes(e.extra) && this.state.interruptions[e.extra] === undefined) {
+						interruptionArr.push(e.extra)
+					}
+
+				})
+				if (seriesArr.length > 0) {
+					axios.get(`/api/cuttingRequestSerieData/seriesArr?series=${seriesArr.join(",")}`)
+						.then(res => {
+							let series = this.state.series
+							res.data.forEach(e => {
+								series[e.serie] = e
+							})
+							this.setState({ series })
+						})
+				}
+				if (placementArr.length > 0) {
+					axios.get(`/api/placementData/nbrPiece/${placementArr.join(",")}`)
+						.then(res => {
+							let placements = this.state.placements
+							//sdf
+							res.data.forEach(e => {
+								if (e.nbrPiece != null) {
+									let tempReperage = 0; 
+									if (e.longueur > 0 && e.longueur < 2) {
+										tempReperage += 90
+									} else if (e.longueur >= 2 && e.longueur < 3.5) {
+										tempReperage += 130
+									} else if (e.longueur >= 3.5 && e.longueur < 5) {
+										tempReperage += 180
+									} else {
+										tempReperage += 220
+									}
+									if (e.drill1) {
+										tempReperage += 25
+									}
+									if (e.drill2) {
+										tempReperage += 25
+									}
+							
+									placements[e.placement] = { ...e, tempReperage }
+								}
+							})
+							this.setState({ placements })
+						})
+				}
+				if (interruptionArr.length > 0) {
+					axios.get(`/api/intervention/getList/${interruptionArr.join(",")}`)
+						.then(res => {
+							let interruptions = this.state.interruptions
+							res.data.forEach(e => {
+								interruptions[e.id] = e
+							})
+							this.setState({ interruptions })
+						})
+				}
+				// Load XPL scan data for the current series
+				if (seriesArr.length > 0) {
+					axios.get(`/api/scanXPL/bySerieIn?series=${seriesArr.join(",")}`)
+						.then(res => {
+							let xplSeries = this.state.xplSeries
+							res.data.forEach(e => {
+								xplSeries[e.serie] = e
+							})
+							this.setState({ xplSeries })
+						})
+						.catch(err => {
+							console.log("Error loading XPL data:", err)
+						})
+				}
+			})
+	}
+
+	getIndicatorsFromMachineData(arr) {
+		let runningTime = 0;
+		let stoppedTime = 0;
+		let interruptionTime = 0;
+		let reperageTime = 0;
+		let counterPiece = 0; let counterPlacement = 0;
+		let lastDate = null; let lastType = null; let lastElement = null;
+
+		if (!arr || arr.length === 0) return null
+		let isFirst = true
+
+		let arrDetails = []
+		let start = null, end = null, running = 0, intervention = 0, reperage = 0, placement = null, events = [], serie = null
+		arr.forEach((element, ind) => {
+			if (element.type === "PieceCut") {
+				counterPiece++;
+				if (counterPiece === 1) {
+					counterPlacement++;
+				}
+			} else {
+				if (isFirst) {
+					events.push(element)
+					placement = element.placement ? element.placement.replace(", aborted=False", "") : "";
+					if (element.type == "Start" || element.type == "StartPositioning") {
+						if (element.type == "Start") {
+							serie = element.extra
+						}
+						stoppedTime += moment(element.lineDate).diff(moment(this.state.date1, 'YYYY-MM-DD HH:mm'))
+						start = lastDate;
+
+					} else if (element.type == "InterruptionCoupeOut") {
+						interruptionTime += moment(element.lineDate).diff(moment(this.state.date1, 'YYYY-MM-DD HH:mm'))
+						intervention += moment(element.lineDate).diff(moment(this.state.date1, 'YYYY-MM-DD HH:mm'))
+						counterPlacement++;
+						start = moment(this.state.date1, 'YYYY-MM-DD HH:mm').format("YYYY-MM-DDTHH:mm:ss.SSS");
+					} else if (element.type == "StopPositioning") {
+						reperageTime += moment(element.lineDate).diff(moment(this.state.date1, 'YYYY-MM-DD HH:mm'))
+						reperage += moment(element.lineDate).diff(moment(this.state.date1, 'YYYY-MM-DD HH:mm'))
+						start = moment(this.state.date1, 'YYYY-MM-DD HH:mm').format("YYYY-MM-DDTHH:mm:ss.SSS");
+						counterPlacement++;
+					} else {
+						if (element.type == "End" && element.extra) {
+							serie = element.extra
+						}
+						runningTime += moment(element.lineDate).diff(moment(this.state.date1, 'YYYY-MM-DD HH:mm'))
+						running += moment(element.lineDate).diff(moment(this.state.date1, 'YYYY-MM-DD HH:mm'))
+						start = moment(this.state.date1, 'YYYY-MM-DD HH:mm').format("YYYY-MM-DDTHH:mm:ss.SSS");
+						counterPlacement++;
+					}
+					isFirst = false;
+				}
+
+				if (lastDate && lastType) {
+					// placement = lastElement.placement.replace(", aborted=False", "");
+					if (lastType !== "End") {
+						events.push(element)
+					}
+					if (lastType === "End") {
+						if (lastElement.extra) {
+							serie = lastElement.extra
+						}
+						stoppedTime += moment(element.lineDate).diff(moment(lastDate))
+						placement = lastElement.placement ? lastElement.placement.replace(", aborted=False", "") : null;
+						end = lastDate;
+						arrDetails.push({ placement, start, end: lastDate, running, intervention, reperage, counterPiece, events, serie })
+						events = [element]
+						start = null; end = null; running = 0; intervention = 0; reperage = 0;
+						counterPiece = 0; placement = element.placement ? element.placement.replace(", aborted=False", "") : null; serie = null
+					} else if (lastType === "Start") {
+						placement = lastElement.placement ? lastElement.placement.replace(", aborted=False", "") : null;
+						runningTime += moment(element.lineDate).diff(moment(lastDate))
+						running += moment(element.lineDate).diff(moment(lastDate))
+						if (start == null) {
+							start = lastDate;
+						}
+						serie = lastElement.extra
+					} else if (lastType === "InterruptionCoupeIn") {
+						interruptionTime += moment(element.lineDate).diff(moment(lastDate))
+						intervention += moment(element.lineDate).diff(moment(lastDate))
+					} else if (lastType === "InterruptionCoupeOut") {
+						runningTime += moment(element.lineDate).diff(moment(lastDate))
+						running += moment(element.lineDate).diff(moment(lastDate))
+					} else if (lastType === "StartPositioning") {
+						placement = lastElement.placement ? lastElement.placement.replace(", aborted=False", "") : null;
+						reperageTime += moment(element.lineDate).diff(moment(lastDate))
+						reperage += moment(element.lineDate).diff(moment(lastDate))
+					} else if (lastType === "StopPositioning") {
+						placement = lastElement.placement ? lastElement.placement.replace(", aborted=False", "") : null;
+						stoppedTime += moment(element.lineDate).diff(moment(lastDate))
+						// running += moment(element.lineDate).diff(moment(lastDate))
+					} else {
+						console.log({ element })
+					}
+				}
+				lastDate = element.lineDate;
+				lastType = element.type;
+				lastElement = element;
+			}
+		});
+		if (lastType !== "PieceCut") {
+			if (lastType == "Start" || lastType == "InterruptionCoupeOut" || lastType == "StopPositioning") {
+				if (lastType == "Start") {
+					if (start == null) {
+						start = lastDate;
+					}
+					serie = lastElement.extra
+					placement = lastElement.placement ? lastElement.placement.replace(", aborted=False", "") : null;
+				}
+				runningTime += moment.min(moment(this.state.date2), moment()).diff(lastDate)
+				running += moment.min(moment(this.state.date2), moment()).diff(lastDate)
+			} else if (lastType == "InterruptionCoupeIn") {
+				interruptionTime += moment.min(moment(this.state.date2), moment()).diff(lastDate)
+				intervention += moment.min(moment(this.state.date2), moment()).diff(lastDate)
+			} else if (lastType == "StartPositioning") {
+				reperageTime += moment.min(moment(this.state.date2), moment()).diff(lastDate)
+				reperage += moment.min(moment(this.state.date2), moment()).diff(lastDate)
+			} else {
+				stoppedTime += moment.min(moment(this.state.date2), moment()).diff(lastDate)
+			}
+		}
+		if (lastType === "End") {
+			placement = lastElement.placement ? lastElement.placement.replace(", aborted=False", "") : null;
+			if (lastElement.extra) {
+				serie = lastElement.extra
+			}
+			arrDetails.push({ placement, start, end: lastDate, running, intervention, reperage, counterPiece, events, serie })
+		} else {
+			arrDetails.push({ placement, start, end: null, running, intervention, reperage, counterPiece, events, serie })
+		}
+
+		// Adjust times for placements ending with "-NS" - move their time to stoppedTime (hors cycle)
+		arrDetails.forEach(detail => {
+			if (detail.placement && detail.placement.endsWith("-NS")) {
+				// Move running, intervention, and reperage time to stopped time (hors cycle)
+				stoppedTime += detail.running + detail.intervention + detail.reperage;
+				runningTime -= detail.running;
+				interruptionTime -= detail.intervention;
+				reperageTime -= detail.reperage;
+			}
+		});
+
+		return { runningTime, stoppedTime, interruptionTime, counterPlacement, reperageTime, lastElement: lastElement, arrDetails }
+	}
+
+
+	convertMinutesToTimeString = (minutes) => {
+		const hours = Math.floor(minutes / 60);
+		const remainingMinutes = minutes % 60;
+		let timeString = hours.toString().padStart(2, '0') + " H ";
+		if (remainingMinutes !== 0) {
+			timeString += remainingMinutes.toString().padStart(2, '0') + " min";
+		}
+		return timeString;
+	};
+
+	convertMillisecondsToTimeString = (milliseconds) => {
+		const seconds = Math.floor(milliseconds / 1000);
+		const minutes = Math.floor(seconds / 60);
+		const remainingSeconds = seconds % 60;
+		const hours = Math.floor(minutes / 60);
+		const remainingMinutes = minutes % 60;
+
+		let timeString = '';
+
+		if (hours > 0) {
+			timeString += hours.toString() + 'h';
+		}
+
+		if (remainingMinutes > 0) {
+			timeString += ' ' + remainingMinutes.toString() + 'min';
+		}
+
+		return timeString.trim();
+	};
+
+	convertMillisecondsToTimeStringV2 = (milliseconds) => {
+		let timeString = '';
+		if (milliseconds < 0) {
+			timeString += '-';
+			milliseconds = Math.abs(milliseconds);
+		}
+
+		const seconds = Math.floor(milliseconds / 1000);
+		const minutes = Math.floor(seconds / 60);
+		const remainingSeconds = seconds % 60;
+		const hours = Math.floor(minutes / 60);
+		const remainingMinutes = minutes % 60;
+
+
+
+		if (hours > 0) {
+			timeString += hours.toString() + 'h';
+		}
+
+		if (remainingMinutes > 0) {
+			timeString += ' ' + remainingMinutes.toString() + 'min';
+		}
+
+		if (remainingSeconds > 0) {
+			timeString += ' ' + remainingSeconds.toString() + 's';
+		}
+
+		return timeString.trim();
+	};
+
+	convertFloat = (float) => {
+		//check if the float is a number
+		if (!float || isNaN(float)) {
+			return float
+		}
+		return parseFloat(parseFloat(float).toFixed(1))
+	}
+
+	renderModalIntervention = () => {
+		let codeErreur = (this.state.intervention && this.state.intervention.codeErreur) ? this.state.codeErreurList.find(err => err.code.toUpperCase().trim() === this.state.intervention.codeErreur.toUpperCase().trim()) : null
+		return <Modal
+			show={this.state.intervention !== null}
+			onHide={() => this.setState({ intervention: null })}
+			// className=""
+			dialogClassName="modal-75w"
+			centered
+		>
+			{this.state.intervention && <div style={{
+				maxHeight: "calc(95vh - 30px)",
+				overflow: "auto",
+				padding: "8 15 0",
+				display: 'flex', flexDirection: "column"
+			}}>
+				<div style={{ flex: 1 }}>
+					<h2 className='text-center m-2'>Formulaire d'intervention</h2>
+					<div style={{ paddingTop: 35 }}>
+						<div className='row my-2 '>
+							<div className='col-2 text-right'>
+								Serie
+							</div>
+							<div className='col-3'>
+								{this.state.intervention.serie}
+							</div>
+							<div className='col-2 text-right'>
+								Séquence
+							</div>
+							<div className='col-3'>
+								{this.state.intervention.sequence}
+							</div>
+						</div>
+						<div className='row my-2 '>
+							<div className='col-2 text-right'>
+								date
+							</div>
+							<div className='col-3'>
+								{this.state.intervention.date}
+							</div>
+							<div className='col-2 text-right'>
+								shift
+							</div>
+							<div className='col-3'>
+								{this.state.intervention.shift}
+							</div>
+						</div>
+						<div className='row my-2 '>
+							<div className='col-2 text-right'>
+								Référence tissu
+							</div>
+							<div className='col-3'>
+								{this.state.intervention.partNumberMaterial}
+							</div>
+							<div className='col-2 text-right'>
+								Description
+							</div>
+							<div className='col-3'>
+								{this.state.intervention.partNumberMaterialDescription}
+							</div>
+						</div>
+						<div className='row my-2 '>
+							<div className='col-2 text-right'>
+								Machine
+							</div>
+							<div className='col-3'>
+								{this.state.intervention.machine}
+							</div>
+						</div>
+						<div className='row my-2 '>
+							<div className='col-2 text-right'>
+								Code d'erreur
+							</div>
+							<div className='col-3'>
+								{this.state.intervention.codeErreur}
+							</div>
+							<div className='col-2 text-right'>
+								Début d'arrêt
+							</div>
+							<div className='col-3'>
+								{this.state.intervention.debutArret?.replace("T", " ")}
+							</div>
+
+						</div>
+						{codeErreur && <div className='row my-2 '>
+							<div className='col-2 text-right'>
+								Détails code d'erreur
+							</div>
+							<div className='col-10'>
+								<ul>
+									<li>designation : {codeErreur.designation}</li>
+									<li>Cause : {codeErreur.rootCause}</li>
+									<li>Action Possible : {codeErreur.actionPossible}</li>
+								</ul>
+							</div>
+						</div>}
+
+						<div className='row my-2 '>
+							<div className='col-2 text-right'>
+								Début d'intervention
+							</div>
+							<div className='col-3'>
+								{this.state.intervention.debutIntervention?.replace("T", " ")}
+							</div>
+							<div className='col-2 text-right'>
+								Fin d'intervention
+							</div>
+							<div className='col-3'>
+								{this.state.intervention.finIntervention?.replace("T", " ")}
+							</div>
+						</div>
+						<div className='row my-2'>
+							<label className='col-2 text-right'>Département</label>
+							<div className='col-3'>
+								{this.state.intervention.departement}
+							</div>
+							<label className='col-2 text-right'>Problème résolu ?</label>
+							<div className='col-3'>
+								{this.state.intervention.problemeResolu}
+							</div>
+
+						</div>
+						<div className='row my-2'>
+							<label className='col-2 text-right'>Code d'arrêt</label>
+							<div className='col-3'>
+								{this.state.intervention.codeArret.code + " " + this.state.intervention.codeArret.motifArret}
+							</div>
+						</div>
+						<div className='row my-2'>
+							{this.state.intervention.codeArret && this.state.intervention.codeArret.code === "D_2" && [<label className='col-2  text-right'>Code Coupe</label>,
+							<div className='col-3'>
+								{this.state.intervention.codeCoupe.code + " " + this.state.intervention.codeCoupe.description}
+							</div>]}
+							{this.state.intervention.departement === "Maintenance" && [<label className='col-2  text-right'>Solution</label>,
+							<div className='col-3'>
+								{this.state.intervention.solution && (this.state.intervention.solution.code + " " + this.state.intervention.solution.description)}
+							</div>]}
+						</div>
+						<div className='row my-2'>
+							<label className='col-2  text-right'>Cause</label>
+							<div className='col-3 p-0'>
+								<div className='col-3'>
+									{this.state.intervention.cause}
+								</div>
+							</div>
+							<label className='col-2  text-right'>Action</label>
+							<div className='col-3 p-0'>
+								<div className='col-3'>
+									{this.state.intervention.action}
+								</div>
+
+							</div>
+						</div>
+
+					</div>
+
+					<div className='row my-2'>
+						<label className='col-2 text-right'>Matricule d'émetteur</label>
+						<div className='col-3' >
+							{this.state.intervention.matriculeEmetteur}
+						</div>
+						<label className='col-2 text-right'>Matricule de responsable</label>
+						<div className='col-3'>
+							{this.state.intervention.matriculeResponsable}
+						</div>
+					</div>
+					{/* <div>
+						<button
+							className='btn btn-sm btn-outline-dark ml-2 mb-2' style={{ padding: "4 40" }}
+							onClick={() => {
+								this.searchInterventions(this.state.intervention.serie)
+							}}
+						><FontAwesomeIcon icon={faArrowRotateRight} /> Refresh</button>
+					</div>
+					<div className='table-responsive'>
+						<table className='table table-bordered table-cells-sm mb-0' style={{ fontSize: 12 }}>
+							<thead className='header-table-black'>
+								<tr>
+									<th>Date de creation</th>
+									<th>Début d'arrêt</th>
+									<th>Début d'intervention</th>
+									<th>Fin d'intervention</th>
+									<th>Code d'erreur</th>
+
+									<th>Code d'arrêt</th>
+									<th>Motif d'arrêt</th>
+									<th>Type d'arrêt</th>
+									<th>Cause</th>
+									<th>Action</th>
+									<th>Département</th>
+									<th>Problème résolu</th>
+									<th>Matricule d'émetteur</th>
+									<th>Matricule de responsable</th>
+									<th>Machine</th>
+								</tr>
+							</thead>
+							<tbody>
+								{this.state.interventionList && this.state.interventionList.map((elem, ind) => <tr
+									key={"row-" + ind}
+									onClick={() => {
+										if (this.state.intervention.id === elem.id) {
+											this.setState({
+												intervention: {
+													serie: this.state.obj.serie,
+													sequence: this.state.obj.cuttingRequest.sequence,
+													date: this.state.obj.planningDate,
+													shift: this.state.obj.shift,
+													partNumberMaterial: this.state.obj.partNumberMaterial,
+													partNumberMaterialDescription: this.state.obj.description,
+													debutArret: moment().format("YYYY-MM-DD,HH:mm:ss").replace(",", "T"),
+													debutIntervention: moment().format("YYYY-MM-DD,HH:mm:ss").replace(",", "T"),
+													finIntervention: moment().format("YYYY-MM-DD,HH:mm:ss").replace(",", "T"),
+													machine: this.state.postObj ? this.state.postObj.tableCoupe : null
+												}
+											})
+										} else {
+											this.setState({ intervention: { ...elem } })
+										}
+									}}
+									style={this.state.intervention.id === elem.id ? { backgroundColor: "lightgray" } : {}}
+								>
+									<td>{elem.createdAt}</td>
+									<td>{elem.debutArret?.replace("T", " ")}</td>
+									<td>{elem.debutIntervention?.replace("T", " ")}</td>
+									<td>{elem.finIntervention?.replace("T", " ")}</td>
+									<td>{elem.codeErreur}</td>
+									<td>{elem.codeArret?.code}</td>
+									<td>{elem.codeArret?.motifArret}</td>
+									<td>{elem.codeArret?.typeArret}</td>
+									<td>{elem.cause}</td>
+									<td>{elem.action}</td>
+									<td>{elem.departement}</td>
+									<td>{elem.problemeResolu}</td>
+									<td>{elem.matriculeEmetteur}</td>
+									<td>{elem.matriculeResponsable}</td>
+									<td>{elem.machine}</td>
+								</tr>)}
+							</tbody>
+						</table>
+					</div> */}
+				</div>
+				<hr />
+				<div style={{ display: "flex", flexDirection: 'row-reverse', backgroundColor: "white", position: "sticky", bottom: 0 }} className="p-2">
+					<button className='btn btn-link' onClick={() => { this.setState({ intervention: null }) }}>Retour</button>
+				</div>
+			</div>}
+		</Modal>
+	}
+
+	renderModalSerie() {
+		if (!this.state.modalObj) return null
+		let arrInteruptions = []
+		let arrReperage = []
+		let arrHorsCycle = []
+		let lastInteruptionDate = null, lastReperageDate = null, errorCode = null
+		if (this.state.modalObj) {
+			this.state.modalObj.events.forEach((element, index) => {
+				if (element.type === "StartPositioning") {
+					lastReperageDate = element.lineDate
+				} else if (element.type === "StopPositioning") {
+					if (arrReperage.length === 0 && lastReperageDate === null) {
+						arrReperage.push({
+							start: this.state.modalObj.start,
+							end: element.lineDate,
+							extra: element.extra,
+							element
+						})
+					} else {
+						arrReperage.push({
+							start: lastReperageDate,
+							end: element.lineDate,
+							extra: element.extra,
+							element
+						})
+						lastReperageDate = null
+					}
+				}
+
+				if (element.type === "InterruptionCoupeIn") {
+					lastInteruptionDate = element.lineDate
+					errorCode = element.errorCode
+				} else if (element.type === "InterruptionCoupeOut") {
+					if (arrInteruptions.length === 0 && lastInteruptionDate === null) {
+						arrInteruptions.push({
+							start: this.state.modalObj.start,
+							end: element.lineDate,
+							errorCode: errorCode ? errorCode : element.errorCode,
+							extra: element.extra,
+							element
+						})
+						errorCode = null
+					} else {
+						arrInteruptions.push({
+							start: lastInteruptionDate,
+							end: element.lineDate,
+							errorCode: errorCode ? errorCode : element.errorCode,
+							extra: element.extra,
+							element
+						})
+						lastInteruptionDate = null;
+						errorCode = null
+					}
+				}
+			});
+			let newArrReperage = []
+			let lastElemRep = null;
+
+			if (this.state.modalObj.placement && this.state.placements[this.state.modalObj.placement]) {
+				let counterMsRepearage = this.state.placements[this.state.modalObj.placement].tempReperage * 1000
+				if (this.state.placements[this.state.modalObj.placement].tempReperage)
+					arrReperage.map(rep => {
+						if(lastElemRep != null) {
+							arrHorsCycle.push({start: lastElemRep.end, end : rep.start})
+						}
+						lastElemRep = rep;
+						// counterMsRepearage is the tatal time of reperage theorique and we to consume it and leave in arrReperege only the time that is not consumed
+						let intervalReperage = moment(rep.end).diff(moment(rep.start))
+						
+						if (intervalReperage > counterMsRepearage) {
+							newArrReperage.push({ ...rep, start: moment(rep.start).add(counterMsRepearage, "ms").format("YYYY-MM-DDTHH:mm:ss.SSS") })
+							counterMsRepearage = 0
+						} else {
+							counterMsRepearage -= intervalReperage
+						}
+					})
+				// arrReperage = arrReperage
+				// .filter(rep => this.state.obj.placement &&  this.state.placements[this.state.obj.placement] && moment(rep.end).diff(moment(rep.start)) > this.state.placements[this.state.obj.placement].tempReperage*1000)
+				// .map(repElem => { return { ...repElem, start: moment(repElem.start).add(this.state.placements[this.state.obj.placement].tempReperage*1000, "ms").format("YYYY-MM-DDTHH:mm:ss.SSS") } })
+				arrReperage = newArrReperage
+			}
+
+		}
+
+		arrInteruptions = arrInteruptions.filter(element => moment(element.end).diff(moment(element.start)) > 30000)
+		return <Modal
+			show={this.state.modalObj}
+			onHide={() => this.setState({ modalObj: null })}
+			dialogClassName="modal-75w"
+			centered
+		>
+			<div style={{
+				maxHeight: "calc(95vh - 30px)",
+				overflow: "auto",
+				padding: "8 15 0",
+				display: 'flex', flexDirection: "column"
+			}}>
+				<div>
+					<FormCoupe serie={this.state.modalObj.serie} />
+				</div>
+				{
+				<div className=''>
+					<table className='table table-bordered table-cells-sm  font-size-30' >
+						<thead className='header-table-black'>
+							<tr style={{ backgroundColor: "#000000" }}>
+								<th colSpan={10} >Hors Cycle</th>
+							</tr>
+							<tr style={{ backgroundColor: "#767676" }}>
+								<th>Date Fin precendente</th>
+								<th>Debut de reperage</th>
+								<th>Diff</th>
+								<th style={{ width: 248 }}>N° Bon</th>
+							</tr>
+						</thead>
+						<tbody>
+							{this.state.modalObj.lastEnd && 
+				 moment(this.state.modalObj.events[0].lineDate).diff(moment(this.state.modalObj.lastEnd)) > 30000 && <tr>
+								<td>{this.state.modalObj.lastEnd && moment(this.state.modalObj.lastEnd).format("HH:mm:ss")}</td>
+								<td>{this.state.modalObj.events[0].lineDate && moment(this.state.modalObj.events[0].lineDate).format("HH:mm:ss")}</td>
+								<td>{this.state.modalObj.events[0].lineDate && this.state.modalObj.lastEnd && this.convertMillisecondsToTimeStringV2(moment(this.state.modalObj.events[0].lineDate).diff(moment(this.state.modalObj.lastEnd)))}</td>
+								<td>{this.state.modalObj.events[0].extra
+									? <div className='d-flex' style={{ justifyContent: "center", alignItems: "center" }}>
+										<span>{this.state.modalObj.events[0].extra}</span>
+										{this.state.interruptions[this.state.modalObj.events[0].extra] && <button className='btn btn-sm btn-outline-primary'
+											onClick={() => {
+												this.setState({ intervention: this.state.interruptions[this.state.modalObj.events[0].extra] })
+											}}><FontAwesomeIcon icon={faEye} /></button>}
+									</div>
+									: <div className='d-flex'>
+										
+									</div>
+								}</td>
+							</tr>}
+							{arrHorsCycle && 
+							arrHorsCycle.map(objHc => {
+								let diff = 0
+								if (objHc.end && objHc.start) {
+									diff = moment(objHc.end).diff(moment(objHc.start))
+								}
+								return <tr key={objHc.id}>
+									<td>{objHc.start && moment(objHc.start).format("HH:mm:ss")}</td>
+									<td>{objHc.end && moment(objHc.end).format("HH:mm:ss")}</td>
+									<td>
+										{this.convertMillisecondsToTimeStringV2(diff)}
+									</td>
+									<td><span style={{color:"red", whiteSpace: "nowrap"}}><FontAwesomeIcon icon={faTriangleExclamation} /> FRAUD <FontAwesomeIcon icon={faTriangleExclamation} /></span></td>
+								</tr>
+
+							})}
+						</tbody>
+					</table>
+				</div>}
+				{arrReperage.length > 0 && <div className=''>
+					<table className='table table-bordered table-cells-sm mt-2  font-size-30'>
+						<thead className='header-table-black' >
+							<tr style={{ backgroundColor: "#034472" }}>
+								<th colSpan={10} >Les repérages</th>
+							</tr>
+							<tr style={{ backgroundColor: "#0070c0" }}>
+								<th>Date debut</th>
+								<th>Date fin</th>
+								<th>Diff</th>
+								<th style={{ width: 248 }}>N° Bon</th>
+							</tr>
+						</thead>
+						<tbody>
+							{arrReperage.map(objRep => {
+								let diff = 0
+								if (objRep.end && objRep.start) {
+									diff = moment(objRep.end).diff(moment(objRep.start))
+								}
+								return <tr key={objRep.id}>
+									<td>{objRep.start && moment(objRep.start).format("HH:mm:ss")}</td>
+									<td>{objRep.end && moment(objRep.end).format("HH:mm:ss")}</td>
+									<td>
+										{this.convertMillisecondsToTimeStringV2(diff)}
+									</td>
+									<td>{objRep.extra
+										? <div className='d-flex' style={{ justifyContent: "center", alignItems: "center" }}>
+											<span>{objRep.extra}</span>
+											{this.state.interruptions[objRep.extra] && <button className='btn btn-sm btn-outline-primary'
+												onClick={() => {
+													this.setState({ intervention: this.state.interruptions[objRep.extra] })
+												}}><FontAwesomeIcon icon={faEye} /></button>}
+										</div>
+										: <div>
+											{/* <button className='btn btn-sm btn-outline-primary ml-2' onClick={() => {
+												this.setState({
+													intervention: {
+														debutArret: objRep.start && moment(objRep.start).format("yyyy-MM-DD HH:mm:ss").replace(" ", "T"),
+														debutIntervention: objRep.start && moment(objRep.start).format("yyyy-MM-DD HH:mm:ss").replace(" ", "T"),
+														finIntervention: objRep.end && moment(objRep.end).format("yyyy-MM-DD HH:mm:ss").replace(" ", "T"),
+														// codeArret: e.value,
+														// departement: e.value.departement,
+														type: "coupe",
+														sousType: "reperage",
+														date: this.state.date,
+														shift: this.state.shift,
+														serie: this.state.modalObj.serie,
+														sequence: this.state.series[this.state.modalObj.serie] ? this.state.series[this.state.modalObj.serie].cuttingRequest.sequence : null,
+														partNumberMaterial: this.state.series[this.state.modalObj.serie] ? this.state.series[this.state.modalObj.serie].partNumberMaterial : null,
+														partNumberMaterialDescription: this.state.series[this.state.modalObj.serie] ? this.state.series[this.state.modalObj.serie].description : null,
+														matriculeEmetteur: this.state.postObj.coupeur1,
+														machine: this.state.postObj.tableCoupe,
+														codeErreur: objRep.errorCode,
+													},
+													quickElement: {
+														...objRep.element,
+													}
+												})
+											}}>Créer un bon</button> */}
+										</div>
+									}</td>
+								</tr>
+							})}
+						</tbody>
+					</table>
+				</div>}
+				{arrInteruptions.length > 0 && <div className=''>
+					<table className='table table-bordered table-cells-sm font-size-30'>
+						<thead className='header-table-black' >
+							<tr style={{ backgroundColor: "#c59505" }}>
+								<th colSpan={10} >Les interruptions</th>
+							</tr>
+							<tr style={{ backgroundColor: "#ffc000" }}>
+								<th>Date debut</th>
+								<th>Date fin</th>
+								<th>Diff</th>
+								<th>Code</th>
+								<th>Designation</th>
+								<th style={{ width: 248 }}>N° Bon</th>
+							</tr>
+						</thead>
+						<tbody>
+							{arrInteruptions.map(objInt => {
+								let diff = 0
+								if (objInt.end && objInt.start) {
+									diff = moment(objInt.end).diff(moment(objInt.start))
+								}
+								let errorObj = null
+								if (objInt.errorCode) {
+									errorObj = this.state.codeErreurList.find(obj => obj.code === objInt.errorCode)
+								}
+								return <tr>
+									<td>{objInt.start && moment(objInt.start).format("HH:mm:ss")}</td>
+									<td>{objInt.end && moment(objInt.end).format("HH:mm:ss")}</td>
+									<td>{this.convertMillisecondsToTimeStringV2(diff)}</td>
+									<td>{objInt.errorCode}</td>
+									<td>{errorObj && errorObj.designation}</td>
+									<td>{objInt.extra
+										&& <div className='d-flex' style={{ justifyContent: "center", alignItems: "center" }}>
+											<span>{objInt.extra}</span>
+											{this.state.interruptions[objInt.extra] && <button className='btn btn-sm btn-outline-primary'
+												onClick={() => {
+													this.setState({ intervention: this.state.interruptions[objInt.extra] })
+												}}><FontAwesomeIcon icon={faEye} /></button>}
+										</div>
+									}</td>
+								</tr>
+							})}
+						</tbody>
+					</table>
+				</div>}
+				<div className='d-flex justify-content-between mb-2'>
+					<button className='btn btn-primary ml-auto' onClick={() => this.setState({ modalObj: null })}>Fermer</button>
+				</div>
+			</div>
+
+		</Modal>
+	}
+
+	renderDetailsMachine = (machine, key) => {
+		let obj = this.getIndicatorsFromMachineData(this.state.data[machine.nom])
+		let fraudAlert = false
+		// let obj = {}
+		let reperageTheorique = 0, horsCycleTheorique = 0 , fullTime = moment.min(moment(this.state.date2), moment()).diff(moment(this.state.date1))
+		if (obj && obj.arrDetails) {
+			obj.arrDetails = obj.arrDetails.map((element, index) => {
+				let totalReperage = element.events.filter(e=> e.type === "StopPositioning")
+				//fraudAlert
+				if(totalReperage.length > 1) {
+					fraudAlert = true
+					element.fraudAlert = true
+				}
+				if (element.reperage > 0 && element.placement && this.state.placements[element.placement.replace(", aborted=True", "")]) {
+					element.diffReperage = this.state.placements[element.placement.replace(", aborted=True", "")].tempReperage * 1000 - element.reperage
+					// Only add to reperageTheorique if placement doesn't end with "-NS"
+					if (!element.placement.endsWith("-NS")) {
+						reperageTheorique += element.diffReperage
+					}
+				}
+				let beforeRow = obj.arrDetails[index - 1]
+				let beforeEnd = beforeRow ? beforeRow.end : moment.min(moment(this.state.date2), moment()).format("YYYY-MM-DDTHH:mm:ss.SSS")
+				let diff = null, lastEnd = null
+				if (element.start) {
+					if (beforeRow && beforeRow.end) {
+						diff = moment(element.start).diff(moment(beforeEnd))
+						lastEnd = beforeEnd
+					} else {
+						diff = moment(element.start).diff(moment(this.state.date1))
+						lastEnd = this.state.date1
+					}
+				}
+				if (diff && element.reperage > 0) {
+					diff -= element.reperage
+				}
+				element.diff = diff
+				element.lastEnd = lastEnd
+				// Only subtract from horsCycleTheorique if placement doesn't end with "-NS"
+				if (!element.placement || !element.placement.endsWith("-NS")) {
+					horsCycleTheorique += (30000 - diff)
+				}
+				return element
+			})
+			fullTime = moment.min(moment(this.state.date2), moment()).diff(moment(this.state.date1))
+					
+			if(this.isDateInAdjustmentRange() && fullTime > 4 * 60 * 60 * 1000) {
+				let timeTodelete = 0
+				if(this.state.shift == 3 ) {
+					timeTodelete = 30
+				} 
+				fullTime -= timeTodelete * 60 * 1000
+				
+				if(obj.interruptionTime > timeTodelete * 60 * 1000) {
+					obj.interruptionTime -= timeTodelete * 60 * 1000
+				} else if(obj.reperageTime > timeTodelete * 60 * 1000)  {
+					obj.reperageTime -= timeTodelete * 60 * 1000
+				} else if(obj.stoppedTime > timeTodelete * 60 * 1000)  {
+					obj.stoppedTime -= timeTodelete * 60 * 1000
+				}
+			}
+
+
+		}
+
+
+		console.log({ [machine.nom]: obj })
+		// Check if machine has worked on any PLS placement (ending with -NS)
+		const hasPLSPlacement = obj && obj.arrDetails && obj.arrDetails.some(e => e.placement && e.placement.endsWith("-NS"))
+		return <div key={key}>
+			<div className='machine-card-container' onClick={() => {
+				if (this.state.selectedMachine.includes(machine.nom)) {
+					this.setState({ selectedMachine: this.state.selectedMachine.filter(e => e !== machine.nom) })
+				} else {
+					this.setState({ selectedMachine: [...this.state.selectedMachine, machine.nom] })
+				}
+			}}>
+				<div className='machine-info' style={{ width: 175 }}>
+					{machine.nom}{hasPLSPlacement && <span style={{color:"#ff6600", fontWeight: "bold", marginLeft: 5}}>PLS</span>}<br />{machine.pcCoupe && `${machine.pcCoupe}`} {fraudAlert && <span style={{color:"red", whiteSpace: "nowrap"}}><FontAwesomeIcon icon={faTriangleExclamation} /> FRAUD <FontAwesomeIcon icon={faTriangleExclamation} /></span>}
+				</div>
+				{obj != null && [
+
+					(obj.lastElement && <div className='machine-info' style={{ flex: 1 }}>
+						{(obj.lastElement.type === "Start" || obj.lastElement.type === "InterruptionCoupeOut" || obj.lastElement.type === "StopPositioning") ? <FontAwesomeIcon icon={faPlay} />
+							: obj.lastElement.type === "End" ? <FontAwesomeIcon icon={faStop} />
+								: obj.lastElement.type === "InterruptionCoupeIn" ? <FontAwesomeIcon icon={faPause} />
+									: obj.lastElement.type === "StartPositioning" ? <FontAwesomeIcon icon={faLocationCrosshairs} />
+										: ""
+						} {obj.arrDetails.length > 0 && obj.arrDetails[obj.arrDetails.length - 1].placement} ({obj.arrDetails[obj.arrDetails.length - 1].counterPiece}
+						{this.state.placements[obj.arrDetails[obj.arrDetails.length - 1].placement] && `/${this.state.placements[obj.arrDetails[obj.arrDetails.length - 1].placement].nbrPiece}`})
+					</div>),
+					<div className='machine-info-center'>
+						{(obj.arrDetails.length > 0) ? obj.arrDetails.filter(e => e.counterPiece > 0 && e.placement != null && !e.placement.toLowerCase().startsWith("test") && !e.placement.endsWith("-NS")).length : 0}
+					</div>,
+					<div className='machine-info-center'>
+						{this.convertMillisecondsToTimeString(obj.runningTime)} ({this.convertFloat(100 * obj.runningTime / fullTime)} %)
+					</div>,
+					<div className='machine-info-center'>
+						{this.convertMillisecondsToTimeString(obj.interruptionTime)} ({this.convertFloat(100 * obj.interruptionTime / fullTime)} %)
+					</div>,
+					<div className='machine-info-center'>
+						{this.convertMillisecondsToTimeString(obj.reperageTime)} ({this.convertFloat(100 * obj.reperageTime / fullTime)} %)
+						<br /><span style={reperageTheorique >= 0 ? { color: "#00ad00" } : { color: "#ff0000" }}>{this.convertMillisecondsToTimeStringV2(reperageTheorique)}</span>
+					</div>,
+					<div className='machine-info-center'>
+						{this.convertMillisecondsToTimeString(obj.stoppedTime)} ({this.convertFloat(100 * obj.stoppedTime / fullTime)} %)
+						<br /><span style={horsCycleTheorique >= 0 ? { color: "#00ad00" } : { color: "#ff0000" }}>{this.convertMillisecondsToTimeStringV2(horsCycleTheorique)}</span>
+					</div>]}
+			</div>
+
+			{this.state.selectedMachine.includes(machine.nom) && <div style={{ margin: "5 20" }}>
+				<table className='table table-bordered table-cells-sm table-font-size'>
+					<thead style={{ color: "white", backgroundColor: "#cb0000" }}>
+						<tr>
+							<th style={{ width: 100 }}>Serie</th>
+							<th style={{ width: 100 }}>Auto Contrôle</th>
+
+							<th style={{ width: 100 }}>Placement</th>
+							<th>Début</th>
+							<th>Fin</th>
+							<th style={{ width: 200 }}>Compteur Pièce</th>
+							<th style={{ width: 235 }}>Running</th>
+							<th style={{ width: 223 }}>Interruption</th>
+							<th style={{ width: 223 }}>Repérage</th>
+							<th style={{ width: 210 }}>Hors cycle</th>
+						</tr>
+					</thead>
+					<tbody>
+						{obj != null && obj.arrDetails && obj.arrDetails.length > 0 && obj.arrDetails.map((element, index) => {
+							let placement = element.placement ? element.placement : ""
+							placement = placement.replace(", aborted=True", "")
+							let end = element.end ? element.end : moment.min(moment(this.state.date2), moment()).format("YYYY-MM-DDTHH:mm:ss.SSS")
+							let beforeRow = obj.arrDetails[index - 1]
+							let beforeEnd = beforeRow ? beforeRow.end : moment.min(moment(this.state.date2), moment()).format("YYYY-MM-DDTHH:mm:ss.SSS")
+							let diff = null
+							if (element.start) {
+								if (beforeRow && beforeRow.end) {
+									diff = moment(element.start).diff(moment(beforeEnd))
+								} else {
+									diff = moment(element.start).diff(moment(this.state.date1))
+								}
+							}
+							if (diff && element.reperage > 0) {
+								diff -= element.reperage
+							}
+							let diffReperage = 0
+							if (element.placement && this.state.placements[placement]) {
+								diffReperage = this.state.placements[placement].tempReperage * 1000 - element.reperage
+							}
+
+							let arrAudit = []
+							if (this.state.series[element.serie]) {
+								let style = { flex: 1, border: "1px grey solid", color: "black", fontWeight: "bold", paddingTop: 12 }
+								arrAudit.push(<div alt={"Premier Paquet"}
+									style={{
+										backgroundColor: (this.state.series[element.serie].premierPaquet === "OK" ? "#2fdb2f"
+											: this.state.series[element.serie].premierPaquet === "NOK" ? "red"
+												: this.state.series[element.serie].premierPaquet === "NA" ? "#5b5beb"
+													: "white"), ...style
+									}}></div>)
+								if (this.state.series[element.serie].longueur > 3) {
+									arrAudit.push(<div
+										alt={"Milieu Paquet"}
+										style={{
+											backgroundColor: (this.state.series[element.serie].milieuPaquet === "OK" ? "#2fdb2f"
+												: this.state.series[element.serie].milieuPaquet === "NOK" ? "red"
+													: this.state.series[element.serie].milieuPaquet === "NA" ? "#5b5beb"
+														: "white"), ...style
+										}}></div>)
+								}
+								if (this.state.series[element.serie].longueur > 0.4) {
+									arrAudit.push(<div
+										alt={"Dernier Paquet"}
+										style={{
+											backgroundColor: (this.state.series[element.serie].dernierPaquet === "OK" ? "#2fdb2f"
+												: this.state.series[element.serie].dernierPaquet === "NOK" ? "red"
+													: this.state.series[element.serie].dernierPaquet === "NA" ? "#5b5beb"
+														: "white"), ...style
+										}}></div>)
+								}
+
+
+								let arrDrill = (this.state.series[element.serie].drill || ",").split(",").map(e => e != "" ? parseInt(e) : 0)
+
+								if (arrDrill[0] > 0) {
+									arrAudit.push(<div
+										alt={"Verification Drill"}
+										style={{
+											backgroundColor: (this.state.series[element.serie].verificationDrill === "OK" ? "#2fdb2f"
+												: this.state.series[element.serie].verificationDrill === "NOK" ? "red"
+													: this.state.series[element.serie].verificationDrill === "NA" ? "#5b5beb"
+														: "white"), ...style
+										}}>D1</div>)
+								}
+								if (arrDrill[1] > 0) {
+									arrAudit.push(<div
+										alt={"Verification Drill"}
+										style={{
+											backgroundColor: (this.state.series[element.serie].verificationDrill2 === "OK" ? "#2fdb2f"
+												: this.state.series[element.serie].verificationDrill2 === "NOK" ? "red"
+													: this.state.series[element.serie].verificationDrill2 === "NA" ? "#5b5beb"
+														: "white"), ...style
+										}}>D2</div>)
+								}
+
+								// XPL Scan verification - show if serie was scanned in XPL
+								arrAudit.push(<div
+									alt={"Scan XPL"}
+									title={this.state.xplSeries[element.serie] ? 
+										`Scanné par: ${this.state.xplSeries[element.serie].operator || 'N/A'} le ${this.state.xplSeries[element.serie].scanDate ? moment(this.state.xplSeries[element.serie].scanDate).format('HH:mm:ss') : 'N/A'}` 
+										: "Non scanné XPL"}
+									style={{
+										backgroundColor: this.state.xplSeries[element.serie] ? "#2fdb2f" : "white",
+										...style
+									}}>XPL</div>)
+
+							}
+
+							return <tr key={"row-" + machine.nom + "-" + index}
+								onDoubleClick={() => {
+									this.setState({ modalObj: element })
+								}}
+								style={element.placement && element.placement.endsWith("-NS") ? { backgroundColor: "#f0f0f0", opacity: 0.7 } : {}}
+							>
+								<td
+									style={this.state.series[element.serie] ? (this.state.series[element.serie].statusCoupe === "Waiting" ? { backgroundColor: "#ffafaf" } :
+										this.state.series[element.serie].statusCoupe === "In progress" ? { backgroundColor: "#f6ff6b" } :
+											this.state.series[element.serie].statusCoupe === "Complete" ? { backgroundColor: "#7bff6b" } :
+												this.state.series[element.serie].statusCoupe === "Incomplete" ? { backgroundColor: "#ffc46b" } :
+													{}) : {}}
+								>{element.serie} {element.fraudAlert && <span style={{color:"red", whiteSpace: "nowrap"}}><FontAwesomeIcon icon={faTriangleExclamation} /> FRAUD <FontAwesomeIcon icon={faTriangleExclamation} /></span>}</td>
+								<td style={{ padding: 0, height: "100%" }}>
+									<div style={{ display: "flex", width: "100%", height: "100% !important", minHeight: 51.5 }}>
+										{arrAudit}
+									</div>
+
+								</td>
+								<td>{element.placement}{element.placement && element.placement.endsWith("-NS") && <span style={{color: "red", fontWeight: "bold", marginLeft: "5px"}}>[NS]</span>}</td>
+								<td>{element.start && moment(element.start).format("HH:mm:ss")}</td>
+								<td>{element.end && moment(element.end).format("HH:mm:ss")}</td>
+								<td // three colors in 0 and less then  this.state.placements[element.placement.replace(", aborted=True", "")] and equal
+									style={{ backgroundColor: this.state.placements[placement] === undefined ? "#ff0000" : element.counterPiece < this.state.placements[placement].nbrPiece ? "#ffff00" : "#00ff00" }}
+								>{element.counterPiece}{this.state.placements[placement] && `/${this.state.placements[placement].nbrPiece}`}</td>
+								<td>
+									{this.convertMillisecondsToTimeStringV2(element.running)}
+									{/* ({this.convertFloat(100 * element.running / moment.min(moment(end), moment()).diff(moment(element.start)))} %) */}
+								</td>
+								<td>
+									{this.convertMillisecondsToTimeStringV2(element.intervention)} ({this.convertFloat(100 * element.intervention / moment.min(moment(end), moment()).diff(moment(element.start)))} %)
+								</td>
+								<td>
+									{this.convertMillisecondsToTimeStringV2(element.reperage)} {element.reperage > 0 && <span>({this.state.placements[placement] && <span style={diffReperage >= 0 ? { color: "#00ad00" } : { color: "#ff0000" }}>
+										{this.convertMillisecondsToTimeStringV2(diffReperage)}
+									</span>})</span>}
+								</td>
+								<td style={diff > 1000 * 60 * 2 ? { backgroundColor: "#ff9090" } : {}}>
+									{this.convertMillisecondsToTimeStringV2(diff)}
+								</td>
+							</tr>
+						})}
+					</tbody>
+				</table>
+			</div>}
+		</div>
+	}
+
+	downloadCSV = () => {
+		// download csv that is fill with this.state.rapportOverlap
+		const replacer = (key, value) => value === null ? '' : value;
+		// user the hearder that i have in my table
+		const header = ["Zone", "Machine", "Placements", "Efficience", "Interruption Total", "Reperage", "Hors Cycle", "Efficience Minute", "Interruption Total Minute", "Reperage Minute", "Reperage +/-", "Hors Cycle Minute", "Hors Cycle +/-"]
+		let arr = []
+		this.state.machineArr.sort((a, b) => (a.zone.nom.localeCompare(b.zone.nom) || a.nom.localeCompare(b.nom)))
+			.map((machine, key) => {
+				let obj = this.getIndicatorsFromMachineData(this.state.data[machine.nom])
+				let reperageTheorique = 0, horsCycleTheorique = 0
+				if (obj && obj.arrDetails) {
+					obj.arrDetails = obj.arrDetails.map((element, index) => {
+						if (element.reperage > 0 && element.placement && this.state.placements[element.placement.replace(", aborted=True", "")]) {
+							element.diffReperage = this.state.placements[element.placement.replace(", aborted=True", "")].tempReperage * 1000 - element.reperage
+							// Only add to reperageTheorique if placement doesn't end with "-NS"
+							if (!element.placement.endsWith("-NS")) {
+								reperageTheorique += element.diffReperage
+							}
+						}
+						let beforeRow = obj.arrDetails[index - 1]
+						let beforeEnd = beforeRow ? beforeRow.end : moment.min(moment(this.state.date2), moment()).format("YYYY-MM-DDTHH:mm:ss.SSS")
+						let diff = null, lastEnd = null
+						if (element.start) {
+							if (beforeRow && beforeRow.end) {
+								diff = moment(element.start).diff(moment(beforeEnd))
+								lastEnd = beforeEnd
+							} else {
+								diff = moment(element.start).diff(moment(this.state.date1))
+								lastEnd = this.state.date1
+							}
+						}
+						if (diff && element.reperage > 0) {
+							diff -= element.reperage
+						}
+						element.diff = diff
+						element.lastEnd = lastEnd
+						// Only subtract from horsCycleTheorique if placement doesn't end with "-NS"
+						if (!element.placement || !element.placement.endsWith("-NS")) {
+							horsCycleTheorique += (30000 - diff)
+						}
+						return element
+					})
+
+					let fullTime = moment.min(moment(this.state.date2), moment()).diff(moment(this.state.date1))
+					
+					if(this.isDateInAdjustmentRange() && fullTime > 4 * 60 * 60 * 1000) {
+						let timeTodelete = 0
+						if(this.state.shift == 3 ) {
+							timeTodelete = 30
+						} 
+						fullTime -= timeTodelete * 60 * 1000
+						if(obj.interruptionTime > timeTodelete * 60 * 1000) {
+							obj.interruptionTime -= timeTodelete * 60 * 1000
+						} else if(obj.reperageTime > timeTodelete * 60 * 1000)  {
+							obj.reperageTime -= timeTodelete * 60 * 1000
+						} else if(obj.stoppedTime > timeTodelete * 60 * 1000)  {
+							obj.stoppedTime -= timeTodelete * 60 * 1000
+						}
+					}
+					arr.push({
+						"Zone": machine.zone.nom,
+						"Machine": machine.nom,
+						"Placements": (obj.arrDetails.length > 0) ? obj.arrDetails.filter(e => e.counterPiece > 0 && e.placement != null && !e.placement.toLowerCase().startsWith("test") && !e.placement.endsWith("-NS")).length : 0,
+						"Efficience": this.convertFloat(100 * obj.runningTime / fullTime),//moment.min(moment(this.state.date2), moment()).diff(moment(this.state.date1))
+						"Interruption Total": this.convertFloat(100 * obj.interruptionTime / fullTime),
+						"Reperage": this.convertFloat(100 * obj.reperageTime / fullTime),
+						"Hors Cycle": this.convertFloat(100 * obj.stoppedTime / fullTime),
+						//obj.runningTime
+						"Efficience Minute": this.convertMillisecondsToMinutes(obj.runningTime),
+						"Interruption Total Minute": this.convertMillisecondsToMinutes(obj.interruptionTime),
+						"Reperage Minute": this.convertMillisecondsToMinutes(obj.reperageTime),
+						"Reperage +/-": this.convertMillisecondsToMinutes(reperageTheorique),
+						"Hors Cycle Minute": this.convertMillisecondsToMinutes(obj.stoppedTime),
+						"Hors Cycle +/-": this.convertMillisecondsToMinutes(horsCycleTheorique)
+					})
+				}
+			})
+		let csv = arr.map(row => header.map(fieldName => JSON.stringify(row[fieldName], replacer)).join(','));
+		csv.unshift(header.join(','));
+		csv = csv.join('\r\n');
+		const blob = new Blob([csv], { type: 'text/csv' });
+		const url = window.URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = 'kpi ' + this.state.date + ' shift' + this.state.shift + ' ' + this.state.selectedZone + '.csv';
+		a.click();
+		window.URL.revokeObjectURL(url);
+	}
+
+	convertMillisecondsToMinutes = (ms) => {
+		return this.convertFloat(ms / 60000)
+	}
+
+	renderGraph = () => {
+		let machineArr = this.state.machineArr.filter(machine => ["Lectra", "Lectra IP6"].includes(machine.machineType.name) && machine.pcCoupe != "NA")
+		let zone = null
+		let objAll = {}, objArr = []
+		let dataPerZone = []
+		let fullTime = moment.min(moment(this.state.date2), moment()).diff(moment(this.state.date1))
+		let timeTodelete = 0
+		if(this.isDateInAdjustmentRange() && fullTime > 4 * 60 * 60 * 1000) {
+			if(this.state.shift == 3 ) {
+				timeTodelete = 30
+			}
+			fullTime -= timeTodelete * 60 * 1000
+		}
+
+		machineArr
+			.sort((a, b) => (a.zone.nom.localeCompare(b.zone.nom) || a.nom.localeCompare(b.nom)))
+			.map(machine => {
+				let obj = this.getIndicatorsFromMachineData(this.state.data[machine.nom])
+				if (obj) {
+					objAll[machine.nom] = obj
+					if(this.isDateInAdjustmentRange() && fullTime > 4 * 60 * 60 * 1000) {
+						if(obj.interruptionTime > timeTodelete * 60 * 1000) {
+							obj.interruptionTime -= timeTodelete * 60 * 1000
+						} else if(obj.reperageTime > timeTodelete * 60 * 1000)  {
+							obj.reperageTime -= timeTodelete * 60 * 1000
+						} else if(obj.stoppedTime > timeTodelete * 60 * 1000)  {
+							obj.stoppedTime -= timeTodelete * 60 * 1000
+						}
+					}
+					objArr.push(obj)
+				}
+			})
+		let zone2 = null
+
+
+		machineArr
+			.sort((a, b) => (a.zone.nom.localeCompare(b.zone.nom) || a.nom.localeCompare(b.nom)))
+			.map(machine => {
+				if ((zone2 == null || machine.zone.nom !== zone2)) {
+					zone2 = machine.zone.nom
+					dataPerZone.push({
+						label: machine.zone.nom,
+						value: this.convertFloat(100 * machineArr.filter(e => e.zone.nom === zone2).reduce((acc, e) => {
+							let obj = objAll[e.nom]
+							if (obj) {
+								acc += obj.runningTime
+							}
+							return acc
+						}, 0) / (machineArr.filter(e => e.zone.nom === zone2 && objAll[e.nom]).length * fullTime))
+					})
+				}
+			})
+		let dataPerType = []
+		if (objArr && objArr.length > 0) {
+			dataPerType = [
+				{
+					label: "runningTime", 
+					value: this.convertFloat(100 * objArr.reduce((acc, e) => acc + e.runningTime, 0) / (fullTime * objArr.length)),
+					color: "#00b050"
+				},
+				{ 
+					label: "interruptionTime", 
+					value: this.convertFloat(100 * objArr.reduce((acc, e) => acc + e.interruptionTime, 0) / (fullTime * objArr.length)),
+					color: "#ffc000"
+				},
+				{ 
+					label: "reperageTime", 
+					value: this.convertFloat(100 * objArr.reduce((acc, e) => acc + e.reperageTime, 0) / (fullTime * objArr.length)),
+					color: "#0070c0"
+				},
+				{ 
+					label: "stoppedTime", 
+					value: this.convertFloat(100 * objArr.reduce((acc, e) => acc + e.stoppedTime, 0) / (fullTime * objArr.length)),
+					color: "#000000"
+				}
+			]
+		}
+
+		return <div style={{ display: "flex" }}>
+			<div style={{ width: "50%" }}>
+				<table className='table table-bordered table-cells-sm table-font-size'>
+					<thead style={{ color: "white", backgroundColor: "#cb0000" }}>
+						<tr style={{ backgroundColor: "#990000" }}>
+							<th colSpan={6}>KPI Efficience machine le {this.state.date} - {this.state.shift}</th>
+							<th>G.E.Z</th>
+							<th>G.E.C</th>
+						</tr>
+						<tr>
+							<th>Zone</th>
+							<th>Machine</th>
+							<th>Efficience</th>
+							<th>Interruption</th>
+							<th>Reperage</th>
+							<th>Hors Cycle</th>
+							<th></th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody>
+						{machineArr.sort((a, b) => (a.zone.nom.localeCompare(b.zone.nom) || a.nom.localeCompare(b.nom)))
+							.map((machine, key) => {
+								let rowSpan = null
+								let totalRunningPerZone = null, totalRunning = null
+								if (key === 0) {
+									totalRunning = machineArr.reduce((acc, e) => {
+										let obj = objAll[e.nom]
+										if (obj) {
+											acc += obj.runningTime
+										}
+										return acc
+									}, 0)
+								}
+								if ((zone == null || machine.zone.nom !== zone) && this.state.selectedZone === "All") {
+									zone = machine.zone.nom
+									rowSpan = machineArr.filter(e => e.zone.nom === zone).length
+									totalRunningPerZone = machineArr.filter(e => e.zone.nom === zone).reduce((acc, e) => {
+										let obj = objAll[e.nom]
+										if (obj) {
+											acc += obj.runningTime
+										}
+										return acc
+									}, 0)
+								}
+								let obj = objAll[machine.nom]
+								if (!obj) {
+									return <tr key={"row-" + machine.nom + "-" + key}>
+										{rowSpan && <td rowSpan={rowSpan} style={{ verticalAlign: "middle" }}>{machine.zone.nom}</td>}
+										<td>{machine.nom}</td>
+										<td style={{ backgroundColor: "#e1e1e1" }}></td>
+										<td style={{ backgroundColor: "#e1e1e1" }}></td>
+										<td style={{ backgroundColor: "#e1e1e1" }}></td>
+										<td style={{ backgroundColor: "#e1e1e1" }}></td>
+										{rowSpan && <td rowSpan={rowSpan}>{totalRunningPerZone && this.convertFloat(100 * totalRunningPerZone / (machineArr.filter(e => e.zone.nom === zone && objAll[e.nom]).length * moment.min(moment(this.state.date2), moment()).diff(moment(this.state.date1))))}</td>}
+										{key === 0 && <td rowSpan={machineArr.length}>{this.convertFloat(100 * totalRunning / (machineArr.filter(e => objAll[e.nom]).length * moment.min(moment(this.state.date2), moment()).diff(moment(this.state.date1))))}</td>}
+									</tr>
+								}
+								return <tr key={"row-" + machine.nom + "-" + key}>
+									{rowSpan && <td rowSpan={rowSpan} style={{ verticalAlign: "middle" }}>{machine.zone.nom}</td>}
+									<td>{machine.nom}</td>
+									<td>{this.convertFloat(100 * obj.runningTime / moment.min(moment(this.state.date2), moment()).diff(moment(this.state.date1)))}</td>
+									<td>{this.convertFloat(100 * obj.interruptionTime / moment.min(moment(this.state.date2), moment()).diff(moment(this.state.date1)))}</td>
+									<td>{this.convertFloat(100 * obj.reperageTime / moment.min(moment(this.state.date2), moment()).diff(moment(this.state.date1)))}</td>
+									<td>{this.convertFloat(100 * obj.stoppedTime / moment.min(moment(this.state.date2), moment()).diff(moment(this.state.date1)))}</td>
+									{rowSpan && <td rowSpan={rowSpan}>{totalRunningPerZone && this.convertFloat(100 * totalRunningPerZone / (machineArr.filter(e => e.zone.nom === zone && objAll[e.nom]).length * moment.min(moment(this.state.date2), moment()).diff(moment(this.state.date1))))}</td>}
+									{key === 0 && <td rowSpan={machineArr.length}>{this.convertFloat(100 * totalRunning / (machineArr.filter(e => objAll[e.nom]).length * moment.min(moment(this.state.date2), moment()).diff(moment(this.state.date1))))}</td>}
+								</tr>
+							})}
+					</tbody>
+				</table>
+			</div>
+			<div style={{ width: "50%" }}>
+				<ResponsiveContainer width="100%" height="40%">
+					<BarChart
+						width={500}
+						height={300}
+						data={dataPerZone}
+						margin={{
+							top: 20,
+							right: 30,
+							left: 20,
+							bottom: 5,
+						}}
+					>
+						<CartesianGrid strokeDasharray="3 3" />
+						<XAxis dataKey="label" />
+						<YAxis />
+						<Tooltip />
+						<Legend />
+						<Bar dataKey="value" fill="#8884d8" />
+					</BarChart>
+				</ResponsiveContainer>
+				<ResponsiveContainer width="100%" height="40%">
+					<PieChart width={400} height={400}>
+						<Pie data={dataPerType} dataKey="value" nameKey="label" cx="50%" cy="50%" outerRadius={150} fill="#82ca9d" label >
+						{dataPerType.map((entry, index) => (
+							<Cell key={`cell-${index}`} fill={entry.color}/>
+						))}
+						</Pie>
+						<Legend />
+					</PieChart>
+				</ResponsiveContainer>
+
+			</div>
+		</div>
+	}
+
+
+	render() {
+		let zone = null
+		return (
+			<div id='kpi' ref={ref => this.bodyRef = ref}>
+				<div style={{ display: "flex", justifyContent: "center", margin: "4 0" }}>
+					<h1>KPI Machines</h1>
+					<div className='col-3' style={{ fontSize: 29 }}>
+						<Select classNamePrefix="rs"
+							placeholder={"Zone..."} className='p-0'
+							isClearable={true}
+							value={(this.state.selectedZone)
+								? { label: this.state.selectedZone, value: this.state.selectedZone }
+								: null
+							}
+							options={[{ label: "All", value: "All" }, ...this.state.zoneArr.map(zone => { return { label: zone, value: zone } })]}
+							onChange={(option) => {
+								if (option) {
+									this.stopLoop()
+									if (option.value === "All") {
+										this.setState({ selectedZone: option.value, machineArr: this.state.productionTableArr })
+									} else {
+										this.setState({ selectedZone: option.value, machineArr: this.state.productionTableArr.filter(element => element.zone.nom === option.value) })
+									}
+									setTimeout(() => {
+										this.startLoop()
+									}, 300)
+								} else {
+									this.setState({ selectedZone: null, machineArr: [] })
+									this.stopLoop()
+								}
+							}}
+						/>
+
+					</div>
+					<button onClick={() => { this.downloadCSV() }} className='btn btn-success ml-1'><FontAwesomeIcon icon={faFileCsv} /> Télécharger</button>
+					<button onClick={() => { this.setState({ showGraph: !this.state.showGraph }) }} className='btn btn-primary ml-1'><FontAwesomeIcon icon={faChartPie} /> Graph</button>
+				</div>
+				<div className='machine-card-container' style={{ backgroundColor: "white" }}>
+					<div className='machine-info'>
+						<div style={{ display: "flex", alignItems: "center", fontSize: 20, fontWeight: "bold" }}>
+							Shift <select
+								className='form-control' style={{ width: 50, height: 30, fontSize: 20, fontWeight: "bold", padding: "0 5" }}
+								value={this.state.shift}
+								onChange={(e) => {
+									let shift = parseInt(e.target.value)
+									let date = this.state.date
+									let date1, date2;
+									if (shift === 1) {
+										date1 = moment(date).subtract(1, 'day').format('YYYY-MM-DD 21:55');
+										date2 = moment(date).format('YYYY-MM-DD 05:45');
+									} else if (shift === 2) {
+										date1 = moment(date).format('YYYY-MM-DD 05:55');
+										//if the day is friday, make the end at 13:30
+										if (moment(date).day() === 5) {
+											date2 = moment(date).format('YYYY-MM-DD 13:30');
+										} else {
+											date2 = moment(date).format('YYYY-MM-DD 13:45');
+										}
+									} else if (shift === 3) {
+										if (moment(date).day() === 5) {
+											date1 = moment(date).format('YYYY-MM-DD 14:05');
+										} else {
+											date1 = moment(date).format('YYYY-MM-DD 13:55');
+										}
+										date2 = moment(date).format('YYYY-MM-DD 21:45');
+									}
+
+									this.setState({ shift, date1, date2 }, () => {
+										this.stopLoop()
+										this.startLoop()
+									})
+								}}
+							>
+								<option value={1}>1</option>
+								<option value={2}>2</option>
+								<option value={3}>3</option>
+							</select>
+							- <input
+								type="date" className='form-control' style={{ width: 170, height: 30, fontSize: 20, fontWeight: "bold" }}
+								value={this.state.date}
+								onChange={(e) => {
+									let date = e.target.value
+									let shift = this.state.shift
+									let date1, date2;
+									if (shift === 1) {
+										date1 = moment(date).subtract(1, 'day').format('YYYY-MM-DD 21:55');
+										date2 = moment(date).format('YYYY-MM-DD 05:45');
+									} else if (shift === 2) {
+										date1 = moment(date).format('YYYY-MM-DD 05:55');
+										//if the day is friday, make the end at 13:30
+										if (moment(date).day() === 5) {
+											date2 = moment(date).format('YYYY-MM-DD 13:30');
+										} else {
+											date2 = moment(date).format('YYYY-MM-DD 13:45');
+										}
+									} else if (shift === 3) {
+										if (moment(date).day() === 5) {
+											date1 = moment(date).format('YYYY-MM-DD 14:05');
+										} else {
+											date1 = moment(date).format('YYYY-MM-DD 13:55');
+										}
+										date2 = moment(date).format('YYYY-MM-DD 21:45');
+									}
+
+									this.setState({ date, date1, date2 }, () => {
+										this.stopLoop()
+										this.startLoop()
+									})
+								}}
+							/> </div>
+						<div style={{ whiteSpace: "nowrap", textAlign: "center" }}>{this.state.date1 && this.state.date1.substring(11)} <FontAwesomeIcon icon={faArrowRight} /> {this.state.date2 && moment.min(moment(this.state.date2), moment()).format("YYYY-MM-DD HH:mm").substring(11)}</div>
+					</div>
+					<div style={{ flex: 1 }}></div>
+					{!this.state.showGraph && [<div className='machine-info-center'>
+						Placements
+					</div>,
+					<div className='machine-info-center'>
+						Efficience
+					</div>,
+					<div className='machine-info-center'>
+						Interruption total
+					</div>,
+					<div className='machine-info-center'>
+						Repérage
+					</div>,
+					<div className='machine-info-center' >
+						Hors cycle
+					</div>]}
+				</div>
+				{this.state.showGraph ?
+					this.renderGraph()
+					: this.state.machineArr
+						.sort((a, b) => (a.zone.nom.localeCompare(b.zone.nom) || a.nom.localeCompare(b.nom)))
+						.map((element, index) => {
+							// render each machine in a card horizontally with other information
+							if ((zone == null || element.zone.nom !== zone) && this.state.selectedZone === "All") {
+								zone = element.zone.nom
+								return <>
+									<h2 style={{ textAlign: "center", backgroundColor: "grey", color: "white", padding: 5 }}>{zone}</h2>
+									{this.renderDetailsMachine(element, index)}
+								</>
+							}
+							return this.renderDetailsMachine(element, index)
+						})
+				}
+				{this.renderModalSerie()}
+				{this.renderModalIntervention()}
+
+			</div>
+		)
+
+	}
+
+}

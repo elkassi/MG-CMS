@@ -1,0 +1,714 @@
+@use "./sass-color-compat" as *;
+
+// LEAR Brand Colors
+$lear-red: #EE3124;
+$lear-white: #ffffff;
+$lear-black: #000000;
+$lear-light-gray: #f5f5f5;
+
+.roll-qlaize-container {
+  padding: 10px;
+  max-width: 100%;
+  margin: 0 auto;
+  background-color: $lear-white;
+  min-height: 100vh;
+
+  .header {
+    margin-bottom: 15px;
+    text-align: center;
+
+    h1 {
+      color: $lear-red;
+      font-size: 1.8rem;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+
+    p {
+      color: lighten($lear-black, 30%);
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+    }
+
+    .refresh-button {
+      background: $lear-red;
+      color: $lear-white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+
+      &:hover {
+        background: darken($lear-red, 10%);
+        transform: translateY(-2px);
+      }
+    }
+
+    .bulk-update-section {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: lighten($lear-light-gray, 2%);
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid lighten($lear-black, 80%);
+      margin-bottom: 10px;
+
+      .bulk-label {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: lighten($lear-black, 20%);
+        white-space: nowrap;
+      }
+
+      .bulk-select {
+        min-width: 150px;
+      }
+
+      .bulk-input {
+        width: 100px;
+        padding: 4px 8px;
+        border: 1px solid lighten($lear-black, 70%);
+        border-radius: 4px;
+        font-size: 0.8rem;
+
+        &:focus {
+          outline: none;
+          border-color: $lear-red;
+          box-shadow: 0 0 0 2px rgba($lear-red, 0.2);
+        }
+      }
+
+      .bulk-apply-button {
+        background: #28a745;
+        color: $lear-white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        white-space: nowrap;
+
+        &:hover {
+          background: #218838;
+        }
+      }
+    }
+  }
+
+  .loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+
+    .loading-spinner {
+      width: 30px;
+      height: 30px;
+      border: 3px solid $lear-light-gray;
+      border-top: 3px solid $lear-red;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 10px;
+    }
+
+    p {
+      color: lighten($lear-black, 30%);
+      font-size: 0.9rem;
+    }
+  }
+
+  .error-message {
+    text-align: center;
+    padding: 20px;
+
+    p {
+      color: $lear-red;
+      font-size: 1rem;
+      margin-bottom: 10px;
+    }
+
+    .retry-button {
+      background: $lear-red;
+      color: $lear-white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+
+      &:hover {
+        background: darken($lear-red, 10%);
+      }
+    }
+  }
+
+  .table-container {
+    background: $lear-white;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba($lear-black, 0.1);
+    overflow: hidden;
+    border: 1px solid $lear-light-gray;
+  }
+
+  .stock-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+
+    thead {
+      background: $lear-red;
+      
+      th {
+        color: $lear-white;
+        padding: 8px 6px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+
+        &.sortable {
+          cursor: pointer;
+          user-select: none;
+          transition: background-color 0.3s ease;
+
+          &:hover {
+            background-color: darken($lear-red, 10%);
+          }
+        }
+      }
+
+      .filter-row {
+        background: lighten($lear-red, 5%);
+
+        th {
+          padding: 4px 6px;
+          
+          .filter-input, .filter-select {
+            width: 100%;
+            padding: 3px 5px;
+            border: 1px solid $lear-light-gray;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            background: $lear-white;
+            color: $lear-black;
+
+            &::placeholder {
+              color: lighten($lear-black, 50%);
+              font-style: italic;
+            }
+
+            &:focus {
+              outline: none;
+              border-color: $lear-white;
+              box-shadow: 0 0 0 2px rgba($lear-white, 0.3);
+            }
+          }
+
+          .filter-select {
+            cursor: pointer;
+          }
+        }
+      }
+    }
+
+    tbody {
+      tr {
+        transition: background-color 0.3s ease;
+        border-bottom: 1px solid $lear-light-gray;
+
+        &:hover {
+          background-color: lighten($lear-light-gray, 2%);
+        }
+
+        &.validated {
+          background-color: lighten(#90EE90, 15%);
+          
+          &:hover {
+            background-color: lighten(#90EE90, 10%);
+          }
+        }
+
+        &.pending {
+          background-color: lighten(#FFE4B5, 10%);
+          
+          &:hover {
+            background-color: lighten(#FFE4B5, 5%);
+          }
+        }
+      }
+
+      td {
+        padding: 6px;
+        vertical-align: middle;
+        color: $lear-black;
+
+        &.item-number {
+          font-weight: 600;
+          color: $lear-red;
+        }
+
+        &.quantity {
+          text-align: right;
+          font-weight: 600;
+        }
+
+        &.laize-contractuel {
+          text-align: center;
+          font-weight: 600;
+          background-color: lighten($lear-light-gray, 3%);
+        }
+      }
+    }
+
+    .laize-reel-cell {
+      text-align: center;
+      min-width: 120px;
+
+      .input-container {
+        display: flex;
+        justify-content: center;
+
+        .laize-input {
+          width: 90px;
+          padding: 4px 6px;
+          border: 2px solid $lear-red;
+          border-radius: 3px;
+          font-size: 0.8rem;
+          text-align: center;
+          background: $lear-white;
+          color: $lear-black;
+
+          &:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba($lear-red, 0.2);
+          }
+        }
+      }
+
+      .laize-value {
+        cursor: pointer;
+        padding: 4px 6px;
+        border-radius: 3px;
+        transition: all 0.3s ease;
+        font-weight: 600;
+
+        &.has-value {
+          background: lighten(#90EE90, 20%);
+          color: darken(#006400, 10%);
+          border: 2px solid transparent;
+        }
+
+        &.no-value {
+          background: lighten($lear-red, 40%);
+          color: $lear-red;
+          border: 2px dashed $lear-red;
+        }
+
+        &:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 2px 4px rgba($lear-black, 0.1);
+        }
+      }
+    }
+
+    .status {
+      text-align: center;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+
+      &.avail2 {
+        color: #008000;
+      }
+    }
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 30px 10px;
+    color: lighten($lear-black, 40%);
+    font-size: 1rem;
+  }
+
+  .summary-section {
+    margin-top: 20px;
+    
+    h2 {
+      color: $lear-red;
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      background: $lear-white;
+
+      thead {
+        background: darken($lear-red, 5%);
+        
+        th {
+          color: $lear-white;
+          padding: 8px 10px;
+          text-align: left;
+          font-weight: 600;
+          font-size: 0.75rem;
+          text-transform: uppercase;
+          letter-spacing: 0.3px;
+        }
+      }
+
+      tbody {
+        tr {
+          border-bottom: 1px solid $lear-light-gray;
+          transition: background-color 0.3s ease;
+
+          &:hover {
+            background-color: lighten($lear-light-gray, 2%);
+          }
+
+          &.validated-summary {
+            background-color: lighten(#90EE90, 18%);
+            
+            &:hover {
+              background-color: lighten(#90EE90, 12%);
+            }
+          }
+
+          &.not-validated-summary {
+            background-color: lighten(#FFE4B5, 12%);
+            
+            &:hover {
+              background-color: lighten(#FFE4B5, 8%);
+            }
+          }
+        }
+
+        td {
+          padding: 8px 10px;
+          vertical-align: middle;
+          color: $lear-black;
+
+          &.item-number {
+            font-weight: 600;
+            color: $lear-red;
+          }
+
+          &.quantity {
+            text-align: right;
+            font-weight: 600;
+            color: darken($lear-black, 10%);
+          }
+
+          &.count {
+            text-align: center;
+            font-weight: 600;
+            color: darken($lear-black, 10%);
+          }
+
+          .laize-value {
+            font-weight: 600;
+            padding: 2px 4px;
+            border-radius: 3px;
+            display: inline-block;
+
+            &.validated {
+              background: lighten(#90EE90, 25%);
+              color: darken(#006400, 10%);
+              border: 1px solid #90EE90;
+            }
+
+            &.not-validated {
+              background: lighten($lear-red, 45%);
+              color: $lear-red;
+              border: 1px solid lighten($lear-red, 20%);
+              font-style: italic;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Responsive Design
+@media (max-width: 1200px) {
+  .roll-qlaize-container {
+    padding: 15px;
+
+    .table-container {
+      overflow-x: auto;
+    }
+
+    .stock-table {
+      min-width: 1000px;
+      font-size: 0.9rem;
+
+      th, td {
+        padding: 10px 8px;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .roll-qlaize-container {
+    padding: 10px;
+
+    .header {
+      h1 {
+        font-size: 2rem;
+      }
+
+      p {
+        font-size: 1rem;
+      }
+
+      .bulk-update-section {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+
+        .bulk-select {
+          min-width: 100%;
+        }
+
+        .bulk-input {
+          width: 100%;
+        }
+
+        .bulk-apply-button {
+          width: 100%;
+        }
+      }
+    }
+
+    .stock-table {
+      font-size: 0.85rem;
+
+      th, td {
+        padding: 8px 6px;
+      }
+    }
+
+    .laize-reel-cell {
+      .laize-input {
+        width: 100px;
+        font-size: 0.9rem;
+      }
+    }
+  }
+}
+
+// Serie Rapport Section
+.serie-rapport-section {
+  margin-bottom: 15px;
+
+  h2 {
+    color: $lear-red;
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    border-bottom: 2px solid $lear-red;
+    padding-bottom: 5px;
+  }
+
+  .serie-rapport-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: $lear-white;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-size: 0.7rem;
+
+    thead {
+      background: $lear-red;
+      color: $lear-white;
+
+      th {
+        padding: 6px 4px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.7rem;
+        white-space: nowrap;
+      }
+    }
+
+    tbody {
+      tr {
+        border-bottom: 1px solid lighten($lear-black, 80%);
+        transition: background-color 0.2s ease;
+
+        &:hover {
+          background-color: lighten($lear-red, 48%);
+        }
+
+        &:last-child {
+          border-bottom: none;
+        }
+      }
+
+      td {
+        padding: 5px 4px;
+        font-size: 0.7rem;
+        border-right: 1px solid lighten($lear-black, 85%);
+
+        &:last-child {
+          border-right: none;
+        }
+
+        // Numeric columns styling
+        &:nth-child(4), // Longueur
+        &:nth-child(5), // Laize
+        &:nth-child(7), // Perimetre
+        &:nth-child(8), // Longueur Total
+        &:nth-child(9) { // Indicateur
+          text-align: right;
+          font-family: monospace;
+        }
+
+        // Center align for Nbr Couche
+        &:nth-child(6) {
+          text-align: center;
+        }
+
+        // Highlight important columns
+        &:nth-child(3) { // Part Number Material
+          font-weight: 500;
+          color: $lear-black;
+        }
+
+        &:nth-child(8) { // Longueur Total
+          font-weight: 500;
+          background-color: lighten($lear-red, 50%);
+        }
+      }
+    }
+  }
+}
+
+// Cutting Request Section
+.cutting-request-section {
+  margin-bottom: 15px;
+
+  h2 {
+    color: $lear-red;
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    border-bottom: 2px solid $lear-red;
+    padding-bottom: 5px;
+  }
+
+  .cutting-request-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: $lear-white;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+    thead {
+      background: $lear-red;
+      color: $lear-white;
+
+      th {
+        padding: 8px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.8rem;
+      }
+    }
+
+    tbody {
+      tr {
+        border-bottom: 1px solid lighten($lear-black, 80%);
+        transition: background-color 0.2s ease;
+
+        &:hover {
+          background-color: lighten($lear-red, 45%);
+        }
+
+        &:last-child {
+          border-bottom: none;
+        }
+      }
+
+      td {
+        padding: 6px 8px;
+        font-size: 0.75rem;
+
+        &.material-number {
+          font-weight: 600;
+          color: $lear-black;
+        }
+
+        &.longueur-total {
+          font-weight: 500;
+          text-align: right;
+        }
+
+        &.count {
+          text-align: center;
+          font-weight: 500;
+        }
+
+        &.comparison {
+          .comparison-details {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+
+            div {
+              font-size: 0.7rem;
+              padding: 1px 0;
+
+              &.difference {
+                font-weight: 600;
+                padding: 2px 4px;
+                border-radius: 2px;
+
+                &.positive {
+                  background-color: lighten(green, 45%);
+                  color: darken(green, 20%);
+                }
+
+                &.negative {
+                  background-color: lighten($lear-red, 40%);
+                  color: darken($lear-red, 10%);
+                }
+              }
+            }
+          }
+        }
+
+        &.empty-cutting-data {
+          text-align: center;
+          padding: 10px;
+          color: lighten($lear-black, 40%);
+          font-style: italic;
+        }
+      }
+    }
+  }
+}
+
+// Animations
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

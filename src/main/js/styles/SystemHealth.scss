@@ -1,0 +1,71 @@
+// SystemHealth — ROLE_ADMIN diagnostics page. Prefix: sh-
+$sh-red: #ee3124;
+$sh-dark: #2c2c2c;
+$sh-border: #e3e3e3;
+$sh-bg: #f6f7f9;
+
+.sh-page {
+    padding: 18px 22px;
+    color: $sh-dark;
+
+    .sh-head {
+        display: flex; align-items: center; justify-content: space-between;
+        flex-wrap: wrap; gap: 10px; margin-bottom: 16px;
+        h2 { margin: 0; color: $sh-red; font-weight: 700; }
+    }
+    .sh-actions {
+        display: flex; align-items: center; gap: 10px;
+        .sh-ts { font-size: 12px; color: #888; }
+        button {
+            border: 1px solid $sh-border; background: #fff; border-radius: 6px;
+            padding: 7px 12px; cursor: pointer; font-size: 13px;
+            display: inline-flex; align-items: center; gap: 6px;
+            &:hover { background: $sh-bg; }
+            &:disabled { opacity: .5; cursor: default; }
+        }
+        .sh-btn-primary { background: $sh-red; color: #fff; border-color: $sh-red;
+            &:hover { background: darken($sh-red, 7%); } }
+    }
+
+    .sh-alert { background: #fdecea; color: #b71c1c; border: 1px solid #f5c6cb;
+        padding: 10px 14px; border-radius: 6px; margin-bottom: 14px; }
+
+    .sh-grid {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 14px; margin-bottom: 14px;
+    }
+
+    .sh-card {
+        background: #fff; border: 1px solid $sh-border; border-radius: 8px;
+        padding: 14px 16px; box-shadow: 0 1px 2px rgba(0,0,0,.04);
+        h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600;
+            display: flex; align-items: center; gap: 8px; color: $sh-dark;
+            svg { color: $sh-red; } }
+        &.sh-wide { margin-bottom: 14px; overflow-x: auto; }
+        .sh-sub { font-size: 12px; color: #666; margin-top: 4px; }
+        .sh-err { color: #b71c1c; font-size: 12px; }
+    }
+
+    .sh-db { &.sh-up { border-left: 4px solid #2e7d32; } &.sh-down { border-left: 4px solid $sh-red; } }
+    .sh-self { background: #fff7e6; font-weight: 600; }
+
+    .sh-bar {
+        position: relative; height: 18px; background: #eef0f2; border-radius: 4px;
+        overflow: hidden; margin: 4px 0;
+        .sh-bar-fill { height: 100%; transition: width .4s; }
+        .sh-bar-ok { background: #2e7d32; }
+        .sh-bar-warn { background: #f29e02; }
+        .sh-bar-crit { background: $sh-red; }
+        span { position: absolute; right: 6px; top: 0; font-size: 11px; line-height: 18px; color: #222; }
+    }
+    .sh-disk { margin-bottom: 8px; .sh-disk-label { font-size: 12px; color: #555; margin-bottom: 2px; } }
+
+    .sh-table {
+        width: 100%; border-collapse: collapse; font-size: 12px;
+        th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid #eee; vertical-align: top; }
+        th { color: #888; font-weight: 600; white-space: nowrap; }
+        &.sh-mini { th, td { padding: 3px 4px; } }
+        .sh-sql { font-family: monospace; max-width: 520px; white-space: pre-wrap;
+            word-break: break-word; color: #333; }
+    }
+}

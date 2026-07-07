@@ -1,0 +1,538 @@
+/* Production Floor — live visual layout of the cutting floor */
+
+.pf-container {
+    padding: 16px 20px 28px;
+    color: #1f2933;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 8px);
+    box-sizing: border-box;
+}
+
+.pf-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 8px;
+
+    .pf-title {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 700;
+    }
+}
+
+.pf-controls {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+
+    .pf-control {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+
+        label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            color: #6b7280;
+        }
+    }
+
+    .pf-input,
+    .pf-select {
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 6px 8px;
+        font-size: 14px;
+        background: #fff;
+    }
+
+    .pf-refresh {
+        border: 1px solid #d1d5db;
+        background: #fff;
+        border-radius: 6px;
+        padding: 8px 12px;
+        cursor: pointer;
+
+        &:disabled { opacity: .6; cursor: default; }
+        &:hover:not(:disabled) { background: #f3f4f6; }
+    }
+}
+
+.pf-generated {
+    font-size: 11px;
+    color: #6b7280;
+    margin-bottom: 8px;
+}
+
+.pf-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+}
+
+.pf-empty {
+    text-align: center;
+    color: #9ca3af;
+    padding: 40px;
+    font-size: 14px;
+}
+
+/* Totals strip */
+.pf-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 12px;
+
+    .pf-stat {
+        min-width: 120px;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 8px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+
+        span { font-size: 12px; color: #6b7280; }
+        strong { font-size: 22px; font-weight: 700; }
+
+        &.pf-stat-ok strong { color: #198754; }
+        &.pf-stat-warn {
+            border-color: #fcd34d;
+            background: #fffbeb;
+            strong { color: #b45309; }
+        }
+    }
+}
+
+/* ---------- Scrollable / pannable floor board ---------- */
+.pf-board {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    background:
+        linear-gradient(#eef2f7 1px, transparent 1px) 0 0 / 24px 24px,
+        linear-gradient(90deg, #eef2f7 1px, transparent 1px) 0 0 / 24px 24px,
+        #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 16px;
+}
+
+/* ---------- Zone panel ---------- */
+.pf-zone {
+    background: #ffffff;
+    border: 2px solid #cbd5e1;
+    border-radius: 10px;
+    width: 360px;
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, .08);
+
+    .pf-zone-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: #1f2937;
+        color: #fff;
+        border-radius: 8px 8px 0 0;
+
+        h3 { margin: 0; font-size: 16px; font-weight: 700; flex: 1; }
+
+        .pf-zone-cat {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            background: rgba(255, 255, 255, .18);
+            border-radius: 4px;
+            padding: 2px 6px;
+        }
+    }
+}
+
+.pf-zone-area {
+    padding: 8px 10px;
+    border-bottom: 1px dashed #e5e7eb;
+
+    .pf-area-label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+        color: #6b7280;
+        margin-bottom: 6px;
+    }
+
+    .pf-area-empty {
+        font-size: 11px;
+        color: #b6bdc7;
+        font-style: italic;
+        padding: 2px 0;
+    }
+}
+
+/* ---------- Machine tiles (Lectra-style) ---------- */
+.pf-machines {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.pf-machine {
+    width: 150px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    overflow: hidden;
+    font-size: 12px;
+    border-left: 5px solid #9ca3af;
+
+    .pf-machine-head {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 8px;
+        color: #fff;
+        background: #6b7280;
+
+        .pf-machine-name { font-weight: 700; flex: 1; }
+        .pf-machine-grp {
+            font-size: 9px;
+            background: rgba(255, 255, 255, .25);
+            border-radius: 3px;
+            padding: 1px 4px;
+        }
+    }
+
+    .pf-machine-status {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+        padding: 2px 8px;
+        color: #4b5563;
+    }
+
+    .pf-machine-cur {
+        padding: 4px 8px 6px;
+
+        .pf-cur-serie {
+            font-weight: 700;
+            small { color: #6b7280; font-weight: 400; }
+        }
+        .pf-cur-mat { color: #475569; font-size: 11px; }
+        .pf-cur-eta {
+            margin-top: 2px;
+            font-size: 11px;
+            color: #b45309;
+            font-weight: 600;
+        }
+
+        &.pf-machine-empty { color: #cbd5e1; text-align: center; }
+    }
+
+    /* status variants */
+    &.pf-machine-cutting {
+        border-left-color: #16a34a;
+        .pf-machine-head { background: #16a34a; }
+        .pf-machine-status { color: #166534; }
+    }
+    &.pf-machine-stopped {
+        border-left-color: #dc2626;
+        .pf-machine-head { background: #dc2626; }
+        .pf-machine-status { color: #b91c1c; }
+    }
+    &.pf-machine-reprage {
+        border-left-color: #ea580c;
+        .pf-machine-head { background: #ea580c; }
+        .pf-machine-status { color: #c2410c; }
+    }
+    &.pf-machine-idle {
+        border-left-color: #9ca3af;
+        .pf-machine-head { background: #9ca3af; }
+    }
+    &.pf-machine-down {
+        border-left-color: #1f2937;
+        .pf-machine-head { background: #1f2937; }
+        .pf-machine-status { color: #374151; }
+    }
+}
+
+/* cut-queue under a machine */
+.pf-queue {
+    border-top: 1px dashed #e5e7eb;
+    background: #f9fafb;
+    padding: 4px 8px 6px;
+
+    .pf-queue-title {
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+        color: #9ca3af;
+        margin-bottom: 2px;
+    }
+
+    .pf-queue-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        padding: 1px 0;
+
+        .pf-queue-pos {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            color: #475569;
+            font-size: 9px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+        }
+        .pf-queue-serie { font-weight: 600; }
+        .pf-queue-mat { color: #64748b; }
+        .pf-queue-len { margin-left: auto; color: #94a3b8; }
+    }
+}
+
+/* ---------- Spreading tables ---------- */
+.pf-spreads {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.pf-spread {
+    width: 165px;
+    border: 1px solid #bfdbfe;
+    background: #eff6ff;
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 12px;
+
+    .pf-spread-head {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 8px;
+        background: #2563eb;
+        color: #fff;
+
+        span { font-weight: 700; }
+        em { margin-left: auto; font-style: normal; font-size: 9px; opacity: .9; }
+    }
+
+    .pf-spread-body { padding: 5px 8px 6px; }
+
+    .pf-spread-roll {
+        font-weight: 700;
+        small { color: #475569; font-weight: 400; }
+    }
+
+    .pf-spread-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 8px;
+        margin-top: 3px;
+        font-size: 10px;
+        color: #475569;
+
+        span { display: inline-flex; align-items: center; gap: 3px; }
+    }
+}
+
+/* ---------- Racks ---------- */
+.pf-racks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.pf-rack {
+    min-width: 96px;
+    border: 1px solid #d8b4a0;
+    background: #fdf6f0;
+    border-radius: 8px;
+    padding: 5px 8px;
+    cursor: pointer;
+    font-size: 12px;
+
+    &:hover { background: #fbeee3; }
+    &.pf-rack-open { width: 100%; }
+
+    .pf-rack-head {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        color: #9a3412;
+        .pf-rack-name { font-weight: 700; }
+    }
+
+    .pf-rack-meta {
+        display: flex;
+        gap: 8px;
+        font-size: 10px;
+        color: #7c4a2d;
+        margin-top: 2px;
+    }
+
+    .pf-rack-rolls {
+        margin-top: 6px;
+        border-top: 1px dashed #e7c9b5;
+        padding-top: 4px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+
+        .pf-rack-roll {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+
+            .pf-roll-id { font-weight: 600; }
+            .pf-roll-ref { color: #64748b; }
+            .pf-roll-m { color: #94a3b8; }
+            .pf-roll-lot { margin-left: auto; color: #a16207; }
+        }
+    }
+}
+
+/* ---------- Boxes occupancy bar ---------- */
+.pf-boxes {
+    padding: 8px 10px 10px;
+    margin-top: auto;
+
+    .pf-boxes-label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: #475569;
+        margin-bottom: 4px;
+
+        span { flex: 1; }
+        strong { font-weight: 700; }
+        .pf-boxes-full { color: #b91c1c; }
+    }
+
+    .pf-boxes-track {
+        height: 10px;
+        background: #e5e7eb;
+        border-radius: 6px;
+        overflow: hidden;
+    }
+
+    .pf-boxes-fill {
+        height: 100%;
+        background: #16a34a;
+        border-radius: 6px;
+        transition: width .3s ease;
+
+        &.pf-boxes-fill-full { background: #dc2626; }
+    }
+}
+
+/* ---------- Sequences (chef rectification) ---------- */
+.pf-seqs {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0 8px;
+}
+
+.pf-seq {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-left: 3px solid #94a3b8;
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 12px;
+
+    &.pf-seq-released { border-left-color: #2563eb; }
+    &.pf-seq-started { border-left-color: #16a34a; }
+    &.pf-seq-missing { border-left-color: #dc2626; }
+
+    .pf-seq-main {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .pf-seq-id { font-weight: 700; color: #0f172a; }
+    .pf-seq-status {
+        padding: 1px 7px;
+        border-radius: 9px;
+        font-size: 10.5px;
+        font-weight: 600;
+        background: #f1f5f9;
+        color: #475569;
+
+        &.pf-seq-status-released { background: #dbeafe; color: #1d4ed8; }
+        &.pf-seq-status-started { background: #dcfce7; color: #15803d; }
+        &.pf-seq-status-missing { background: #fee2e2; color: #b91c1c; }
+    }
+    .pf-seq-boxes { color: #475569; font-weight: 600; }
+    .pf-seq-due { margin-left: auto; color: #94a3b8; }
+
+    .pf-seq-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 5px;
+        flex-wrap: wrap;
+    }
+
+    .pf-seq-btn {
+        border: 1px solid #cbd5e1;
+        background: #f8fafc;
+        border-radius: 5px;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #334155;
+        cursor: pointer;
+
+        &:hover:not(:disabled) { background: #e2e8f0; }
+        &:disabled { opacity: .5; cursor: default; }
+
+        &.pf-seq-btn-ok { color: #15803d; border-color: #86efac; }
+        &.pf-seq-btn-warn { color: #b45309; border-color: #fcd34d; }
+    }
+
+    .pf-seq-move {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        color: #475569;
+
+        select {
+            border: 1px solid #cbd5e1;
+            border-radius: 5px;
+            font-size: 11px;
+            padding: 1px 4px;
+            background: #fff;
+        }
+    }
+}

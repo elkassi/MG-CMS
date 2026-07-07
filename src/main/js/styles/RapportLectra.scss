@@ -1,0 +1,39 @@
+.machine-card-container {
+    display: flex;
+    border: 1px solid rgb(188, 188, 188);
+    border-radius: 5px;
+    margin: 5px;
+    align-items: center;
+    &:hover {
+        background-color: rgb(224, 224, 224);
+        cursor: pointer;
+    }
+
+    .machine-info {
+        font-size: 20;
+        font-weight: bold;
+        padding: 10;
+    }
+
+    .machine-info-center {
+        font-size: 20;
+        font-weight: bold;
+        padding: 10;
+        text-align: center;
+        width:220;
+    }
+
+}
+
+.font-size-30 {
+    & td , & th {
+        font-size: 30;
+    }
+    font-size: 30;
+}
+
+.table-font-size {
+    &>tbody>tr>td , &>thead>tr>th {
+        font-size: 20;
+    }
+}

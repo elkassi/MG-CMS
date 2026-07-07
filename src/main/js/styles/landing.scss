@@ -1,0 +1,434 @@
+
+@use "./sass-color-compat" as *;
+
+// LEAR Brand Colors
+$lear-red: #ee3124;
+$lear-light-gray: #f5f5f5;
+$lear-black: #000000;
+$lear-white: #ffffff;
+
+// Modern Landing Page Styles
+.landing-container {
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.landing-background {
+  background: linear-gradient(135deg, $lear-black 0%, lighten($lear-black, 15%) 100%);
+  min-height: 100vh;
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 20% 50%, rgba($lear-red, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba($lear-red, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba($lear-red, 0.1) 0%, transparent 50%);
+    opacity: 0.8;
+    z-index: 1;
+  }
+}
+
+.landing-overlay {
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.landing-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  max-width: 1200px;
+  width: 100%;
+  gap: 60px;
+  align-items: center;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    text-align: center;
+  }
+}
+
+// Left Side - Branding
+.landing-branding {
+  color: $lear-white;
+  
+  .landing-brand-content {
+    max-width: 500px;
+  }
+}
+
+.landing-main-logo {
+  max-width: 350px;
+  height: auto;
+  margin-bottom: 40px;
+  filter: brightness(0) invert(1);
+  
+  @media (max-width: 768px) {
+    max-width: 180px;
+    margin: 0 auto 30px;
+    display: block;
+  }
+}
+
+.landing-description {
+  font-size: 1.4rem;
+  color: $lear-light-gray;
+  margin-bottom: 50px;
+  line-height: 1.6;
+  font-weight: 300;
+  
+  @media (max-width: 768px) {
+    font-size: 1.1rem;
+    margin-bottom: 30px;
+  }
+}
+
+.landing-features {
+  display: flex;
+  gap: 40px;
+  
+  @media (max-width: 768px) {
+    justify-content: center;
+    gap: 30px;
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.1rem;
+  color: $lear-light-gray;
+  font-weight: 400;
+  
+  .feature-icon {
+    font-size: 1.4rem;
+    color: $lear-red;
+  }
+}
+
+// Right Side - Login Form
+.landing-login-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-card {
+  background: rgba($lear-white, 0.98);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 20px 40px rgba($lear-black, 0.15);
+  border: 1px solid rgba($lear-light-gray, 0.3);
+  width: 100%;
+  max-width: 450px;
+  
+  @media (max-width: 768px) {
+    padding: 30px 20px;
+    margin: 0 10px;
+  }
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 30px;
+  
+  h3 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: $lear-black;
+    margin-bottom: 8px;
+  }
+  
+  p {
+    color: lighten($lear-black, 40%);
+    font-size: 1rem;
+    margin: 0;
+  }
+}
+
+.login-form {
+  .form-group {
+    margin-bottom: 25px;
+  }
+}
+
+.form-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: $lear-black;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+  
+  .input-icon {
+    color: $lear-red;
+    font-size: 1rem;
+  }
+}
+
+.form-input {
+  width: 100%;
+  padding: 15px 18px;
+  border: 2px solid $lear-light-gray;
+  border-radius: 12px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: $lear-white;
+  color: $lear-black;
+  
+  &:focus {
+    outline: none;
+    border-color: $lear-red;
+    box-shadow: 0 0 0 3px rgba($lear-red, 0.1);
+  }
+  
+  &::placeholder {
+    color: lighten($lear-black, 50%);
+  }
+  
+  &.form-input-error {
+    border-color: $lear-red;
+    box-shadow: 0 0 0 3px rgba($lear-red, 0.1);
+  }
+}
+
+.password-input-container {
+  position: relative;
+  
+  .password-toggle {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: lighten($lear-black, 40%);
+    cursor: pointer;
+    padding: 5px;
+    transition: color 0.3s ease;
+    
+    &:hover {
+      color: $lear-red;
+    }
+    
+    &:focus {
+      outline: none;
+    }
+  }
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: $lear-red;
+  font-size: 0.875rem;
+  margin-top: 8px;
+  
+  .error-icon {
+    font-size: 0.875rem;
+  }
+}
+
+.form-options {
+  margin-bottom: 30px;
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: $lear-black;
+  
+  .checkbox-input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    
+    &:checked ~ .checkbox-checkmark {
+      background-color: $lear-red;
+      border-color: $lear-red;
+      
+      &::after {
+        display: block;
+      }
+    }
+  }
+  
+  .checkbox-checkmark {
+    position: relative;
+    height: 20px;
+    width: 20px;
+    background-color: $lear-white;
+    border: 2px solid $lear-light-gray;
+    border-radius: 4px;
+    margin-right: 12px;
+    transition: all 0.3s ease;
+    
+    &::after {
+      content: "";
+      position: absolute;
+      display: none;
+      left: 6px;
+      top: 2px;
+      width: 6px;
+      height: 10px;
+      border: solid $lear-white;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+  }
+}
+
+.login-button {
+  width: 100%;
+  padding: 15px;
+  background: linear-gradient(135deg, $lear-red 0%, darken($lear-red, 10%) 100%);
+  color: $lear-white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba($lear-red, 0.3);
+    background: linear-gradient(135deg, darken($lear-red, 5%) 0%, darken($lear-red, 15%) 100%);
+  }
+  
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+  }
+  
+  .button-icon {
+    font-size: 1rem;
+  }
+}
+
+.forgot-password {
+  text-align: center;
+  margin-top: 20px;
+  
+  .forgot-password-link {
+    background: none;
+    border: none;
+    color: $lear-red;
+    cursor: pointer;
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: color 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    
+    &:hover {
+      color: darken($lear-red, 10%);
+      text-decoration: underline;
+    }
+    
+    .link-icon {
+      font-size: 0.875rem;
+    }
+  }
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid $lear-light-gray;
+  
+  p {
+    color: lighten($lear-black, 40%);
+    font-size: 0.875rem;
+    margin: 0;
+  }
+}
+
+// Legacy styles for backward compatibility
+html, body, #root, .App {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.fill-height {
+  min-height: 100% !important;
+  height: 100%;
+}
+
+// Responsive Design
+@media (max-width: 992px) {
+  .landing-content {
+    gap: 40px;
+  }
+  
+  .login-card {
+    max-width: 400px;
+  }
+}
+
+@media (max-width: 576px) {
+  .landing-overlay {
+    padding: 10px;
+  }
+  
+  .login-card {
+    padding: 25px 15px;
+  }
+  
+  .landing-title {
+    font-size: 1.8rem;
+  }
+  
+  .landing-subtitle {
+    font-size: 1.2rem;
+  }
+}
+
+// Animation keyframes
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login-card {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.landing-branding {
+  animation: fadeInUp 0.6s ease-out 0.2s both;
+}

@@ -1,0 +1,228 @@
+/* Chef de Zone supervision page — wraps LiveChargeView with action UI. */
+
+.cz-page {
+    .cz-title-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+
+        h3 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.4rem;
+        }
+
+        .cz-default-badge {
+            display: inline-block;
+            background: #0d6efd;
+            color: #fff;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            margin-left: 8px;
+        }
+    }
+
+    .cz-zone-chips {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .cz-zone-chip {
+        background: #e9ecef;
+        color: #212529;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+
+        &.cz-zone-strict { background: #d1e7dd; color: #0a3622; }
+        &.cz-zone-shared { background: #fff3cd; color: #664d03; }
+
+        &.cz-zone-default {
+            box-shadow: 0 0 0 2px #0d6efd;
+        }
+
+        small {
+            color: inherit;
+            opacity: 0.7;
+            margin-left: 4px;
+        }
+    }
+
+    /* Action toolbar injected per sequence row via renderSequenceActions */
+    .cz-engine-badge {
+        background: linear-gradient(90deg, #ffc107 0%, #fd7e14 100%);
+        color: #fff;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        margin-right: 8px;
+        animation: cz-pulse 1.6s ease-in-out infinite;
+    }
+
+    .cz-readonly-banner {
+        background: #6c757d;
+        color: #fff;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-right: 8px;
+    }
+
+    @keyframes cz-pulse {
+        0%, 100% { opacity: 0.85; }
+        50%      { opacity: 1; }
+    }
+
+    /* Audit drawer */
+    .cz-audit-drawer {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 10px 14px;
+        margin: 8px 0 14px;
+
+        h6 {
+            margin: 0 0 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .cz-audit-empty {
+            color: #6c757d;
+            font-style: italic;
+            font-size: 0.85rem;
+        }
+
+        .cz-audit-table {
+            width: 100%;
+            font-size: 0.78rem;
+            border-collapse: collapse;
+
+            th, td {
+                padding: 4px 8px;
+                border-bottom: 1px solid #f1f3f5;
+                text-align: left;
+            }
+
+            th {
+                background: #f8f9fa;
+                font-weight: 600;
+                color: #495057;
+            }
+
+            .cz-audit-seq { font-weight: 600; color: #212529; }
+            .cz-audit-trigger {
+                display: inline-block;
+                background: #e9ecef;
+                color: #495057;
+                padding: 1px 8px;
+                border-radius: 4px;
+                font-size: 0.7rem;
+                font-weight: 600;
+            }
+            .cz-audit-reason {
+                color: #6c757d;
+                font-style: italic;
+                max-width: 300px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+        }
+    }
+}
+
+/* Bulk-action toolbar injected into each zone card header. */
+.cz-zone-bulk {
+    display: inline-flex;
+    gap: 6px;
+    margin-left: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+
+    .cz-btn {
+        font-size: 0.72rem;
+        padding: 2px 10px;
+    }
+}
+
+/* Action buttons injected into LiveChargeView via renderSequenceActions.
+   Selectors live here (not LiveChargeView.scss) so the base view stays
+   chef-agnostic. */
+.lc-seq-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin: 6px 0 0 24px;
+    padding: 4px 0 0;
+
+    .cz-btn {
+        font-size: 0.72rem;
+        padding: 2px 10px;
+        line-height: 1.4;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+
+        svg { font-size: 0.7rem; }
+    }
+
+    .cz-no-actions {
+        color: #adb5bd;
+        font-style: italic;
+        font-size: 0.75rem;
+    }
+}
+
+.cz-pull-picker {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+    width: 100%;
+    background: #fff8e1;
+    border: 1px dashed #f5b500;
+    padding: 6px 10px;
+    border-radius: 6px;
+
+    .cz-pull-prompt {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #664d03;
+    }
+
+    .cz-pull-target {
+        font-size: 0.72rem;
+        padding: 2px 10px;
+    }
+
+    .cz-reason {
+        flex: 1;
+        min-width: 160px;
+        font-size: 0.78rem;
+        padding: 2px 8px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+    }
+}
+
+/* Header extras placement inside LiveChargeView header card */
+.lc-header-extras {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}

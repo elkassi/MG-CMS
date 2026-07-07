@@ -1,0 +1,54 @@
+.table-black-border {
+    width: 100%;
+    $color: black;
+    & th { 
+        border: 1px solid $color;
+        // border-bottom: 1px solid $color !important;
+    }
+    & td {
+        border: 1px solid $color;
+    }
+}
+
+.table-grey-border {
+    width: 100%;
+    $color: rgb(190, 190, 190);
+    & th { 
+        border: 1px solid $color;
+        // border-bottom: 1px solid $color !important;
+    }
+    & td {
+        border: 1px solid $color;
+    }
+}
+
+.alert-error {
+    position: sticky;
+    bottom: 24;
+    overflow-y: auto;
+    max-height: 40vh;
+    .btn-toclose {
+        position: absolute;
+        top: 0;
+        right: 0;
+    }
+}
+.text-no-wrap {
+    white-space: nowrap;
+}
+
+.clickable-elem {
+    &:hover {
+        background-color: rgb(232, 232, 232);
+        cursor: pointer;
+    }
+}
+
+.table-elements-sm {
+    & td , & th {
+        padding: 0.3rem;
+        white-space: nowrap;
+        
+    }
+} 
+

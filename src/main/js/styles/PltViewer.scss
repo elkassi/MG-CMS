@@ -1,0 +1,31 @@
+.calibrage-container {
+    overflow: hidden;
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    transition: height 300ms;
+    z-index: 2;
+    .calibrage-content {
+        width: 100%;
+        background-color: #f8f9fa;
+        border-top: 1px solid #e9ecef;
+        z-index: 1000;
+        border-radius: 10px 10px 0 0;
+        color: black;
+        height: 150;
+    }
+}
+
+
+.header-info-bubble {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 5px;
+    //shadow
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.7);
+    //margins
+    margin: 5px;
+    font-size: 20;
+    color: black;
+}

@@ -1,0 +1,83 @@
+.entityform-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    background-color: #efefef;
+    padding: 8px 20px 8px 55px;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+
+    // When the title lives inside the header bar it must not draw its own bar.
+    .entityform-title {
+        margin: 0;
+        padding: 0;
+        background-color: transparent;
+        position: static;
+        top: auto;
+        z-index: auto;
+    }
+}
+
+.entityform-title {
+    background-color: #efefef;
+    text-align: left;
+    padding: 15px 0 15px 55px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.entityform-buttons {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.entityform-container {
+    margin: 0 15px;
+
+    .entityform-field {
+        margin-bottom: 5px;
+
+        .entityform-input {
+            font-size: 12px;
+        }
+    }
+}
+
+.rs__control {
+    border-color: #aaa;
+    min-height: auto !important;
+    .rs__value-container {
+        padding: 0 8px !important;
+
+        .rs__input input {
+            padding: 0 !important;
+            height: auto !important;
+        }
+    }
+
+    .rs__indicator {
+        padding: 4px 3px !important;
+    }
+
+    .rs__indicator-separator {
+        margin: 3px 0 !important;
+    }
+}
+
+.react-datepicker-popper {
+    z-index: 20 !important;
+}
+.react-datepicker-ignore-onclickoutside {
+    font-size: 12px;
+}
+.react-datepicker__input-container>input {
+    font-size: 12px;
+}
+

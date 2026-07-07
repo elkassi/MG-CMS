@@ -1,0 +1,8 @@
+{
+  "files": [
+    "src/main/resources/templates/index.html"
+  ],
+  "insertBefore": "</body>",
+  "commentSyntax": "html",
+  "cspChecked": true
+}

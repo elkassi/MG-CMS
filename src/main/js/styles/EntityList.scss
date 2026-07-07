@@ -1,0 +1,143 @@
+.entity-table {
+    max-height: calc(100vh - 148px);
+
+    &>table>tbody>tr>td,
+    &>table>thead>tr>th {
+        white-space: nowrap;
+        padding: 0.5rem;
+    }
+
+    & th, & td {
+        padding: 0.3rem;
+        text-align: center ;
+        align-content: center !important;
+        vertical-align: middle !important;
+        white-space: nowrap;
+    }
+
+
+    .entity-table-header {
+        background-color: #ca0c0c;
+        color: white;
+        position: sticky;
+        top: 0;
+        &>tr>th {
+            border-top-width: 0;
+            border-bottom-width: 0;
+        }
+    }
+}
+
+.p2-important {
+    padding: 2px !important;
+}
+
+.z-index-3 {
+    z-index: 3;
+}
+
+.switch-form-td .react-switch {
+    z-index: -1;
+}
+
+.table-elem-sm {
+    padding: 0.1rem !important;
+    text-align: center;
+    align-content: center !important;
+    vertical-align: middle !important;
+
+    & input {
+        width: 100%;
+        text-align: center;
+        padding: 4 8;
+    }
+}
+
+.table-elem-sm {
+    padding-left: 5 !important;
+    padding-right: 5 !important;
+    // width: 10;
+    text-align: center;
+
+    &>input {
+        // width: 60;
+        width: 100%;
+        text-align: center;
+    }
+
+    padding: 0.3rem !important;
+    align-content: center !important;
+    vertical-align: middle !important;
+
+}
+
+.entity-table-sm {
+
+    &>thead>tr>th,
+    &>tbody>tr>td {
+        padding: 0.1rem 0.2rem !important;
+        text-align: center;
+        align-content: center !important;
+        vertical-align: middle !important;
+        font-size: 16;
+    }
+}
+
+.entity-table-sm-12 {
+
+    &>thead>tr>th,
+    &>tbody>tr>td {
+        padding: 0.1rem 0.2rem !important;
+        text-align: center;
+        align-content: center !important;
+        vertical-align: middle !important;
+        font-size: 12;
+    }
+}
+
+.entity-table-sm-14 {
+
+    &>thead>tr>th,
+    &>tbody>tr>td {
+        padding: 0.1rem 0.2rem !important;
+        text-align: center;
+        align-content: center !important;
+        vertical-align: middle !important;
+        font-size: 14;
+    }
+}
+
+.entity-table-sm-18 {
+
+    &>thead>tr>th,
+    &>tbody>tr>td {
+        padding: 0.1rem 0.2rem !important;
+        text-align: center;
+        align-content: center !important;
+        vertical-align: middle !important;
+        font-size: 18;
+    }
+}
+.modal-75w {
+    max-width: 31.6cm;
+    // width: 31.6cm;
+    // max-height: 100vh;
+    // height: 41.6cm;
+}
+
+.modal-90w {
+    max-width: 90%;
+}
+
+.table-row-selective {
+    &:hover {
+        background-color: #ececec;
+        cursor: pointer;
+    }
+}
+
+
+
+.elem-no-wrap {
+    white-space: nowrap;
+}

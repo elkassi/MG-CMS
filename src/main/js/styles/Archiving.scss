@@ -1,0 +1,44 @@
+// Archiving — ROLE_ADMIN page. Prefix: arc-
+$arc-red: #ee3124;
+$arc-dark: #2c2c2c;
+$arc-border: #e3e3e3;
+
+.arc-page {
+    padding: 18px 22px;
+    color: $arc-dark;
+
+    .arc-head {
+        display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+        h2 { margin: 0; color: $arc-red; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        button { border: 1px solid $arc-border; background: #fff; border-radius: 6px; padding: 7px 12px;
+            cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+            &:hover { background: #f6f7f9; } &:disabled { opacity: .5; } }
+    }
+    .arc-note { font-size: 13px; color: #6b6b6b; background: #fff8e1; border: 1px solid #ffe7a0;
+        padding: 8px 12px; border-radius: 6px; margin: 6px 0 16px;
+        svg { color: #f29e02; margin-right: 6px; } code { background: #f1f1f1; padding: 1px 4px; border-radius: 3px; } }
+    .arc-alert { background: #fdecea; color: #b71c1c; border: 1px solid #f5c6cb; padding: 10px 14px;
+        border-radius: 6px; margin-bottom: 14px; }
+
+    .arc-table {
+        width: 100%; border-collapse: collapse; font-size: 13px; background: #fff;
+        border: 1px solid $arc-border; border-radius: 8px; overflow: hidden;
+        th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #eee; vertical-align: middle; }
+        th { color: #888; font-weight: 600; font-size: 12px; background: #fafafa; }
+        input[type="date"] { border: 1px solid $arc-border; border-radius: 5px; padding: 4px 6px; }
+    }
+    .arc-sub { font-size: 11px; color: #999; }
+    .arc-count { margin-left: 8px; font-weight: 600; color: #1565c0; }
+    .arc-ok { margin-left: 8px; font-weight: 600; color: #2e7d32; }
+    .arc-err { margin-left: 8px; color: #b71c1c; font-size: 12px; }
+
+    button.arc-ghost { border: 1px solid $arc-border; background: #fff; border-radius: 5px; padding: 5px 9px; cursor: pointer;
+        &:hover { background: #f0f0f0; } }
+    button.arc-danger { border: 1px solid $arc-red; background: $arc-red; color: #fff; border-radius: 6px;
+        padding: 6px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+        &:hover { background: darken($arc-red, 7%); } &:disabled { opacity: .5; } }
+
+    .arc-cold { margin-top: 26px;
+        h3 { font-size: 15px; color: $arc-dark; margin-bottom: 4px; }
+        code { background: #f1f1f1; padding: 1px 4px; border-radius: 3px; } }
+}

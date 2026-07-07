@@ -1,0 +1,34 @@
+{
+  "mcpServers": {
+    "mssql-prod-reader": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@esetnik/mssql-mcp-reader@0.1.0"
+      ],
+      "env": {
+        "SERVER_NAME": "MSI\\SQLEXPRESS",
+        "DATABASE_NAME": "LEAR_MG_CMS_Prod",
+        "SQL_CONNECTION_STRING": "Driver={ODBC Driver 17 for SQL Server};Server=MSI\\SQLEXPRESS;Database=LEAR_MG_CMS_Prod;Trusted_Connection=Yes;Encrypt=No;TrustServerCertificate=Yes;Connection Timeout=60;",
+        "SQL_DRIVER": "msnodesqlv8",
+        "REQUEST_TIMEOUT": "300"
+      },
+      "timeout": 300
+    },
+    "ruflo": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "ruflo@latest",
+        "mcp",
+        "start"
+      ],
+      "disabled": true,
+      "timeout": 300
+    }
+  }
+}
