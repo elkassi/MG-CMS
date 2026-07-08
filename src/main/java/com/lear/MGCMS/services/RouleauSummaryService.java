@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import java.time.LocalDateTime;
 
 @Service
 public class RouleauSummaryService {
@@ -29,6 +30,12 @@ public class RouleauSummaryService {
 
     @Autowired
     private SerieRouleauTempRepository serieRouleauTempRepository;
+
+    @Autowired(required = false)
+    private com.lear.MGCMS.repositories.CuttingRequest.data.CuttingRequestSerieRouleauDataRepository cuttingRepo;
+
+    @Autowired(required = false)
+    private com.lear.pls.repositories.ProdTicketRepository prodTicketRepo;
 
     /**
      * Build a lookup map from ScanRouleau keyed by reftissu (normalized, without P prefix).
@@ -136,6 +143,7 @@ public class RouleauSummaryService {
                     report.setRef(ref);
                     report.setQtyOnHand(qty);
                     report.setStatus(statusStr);
+                    report.setUm(um);
                     report.setIsDeleted(false);
                     arr.add(report);
                 }
@@ -159,6 +167,7 @@ public class RouleauSummaryService {
         boolean hasItemNumber = itemNumber != null && !itemNumber.trim().isEmpty();
         
         List<StockStatusReport> filtered = allData.stream().filter(st -> {
+            if (st.getUm() == null || !st.getUm().trim().equalsIgnoreCase("MT")) return false;
             boolean match = true;
             if (hasRollId && (st.getRef() == null || !st.getRef().toLowerCase().contains(rollId.toLowerCase()))) {
                 match = false;
@@ -184,13 +193,13 @@ public class RouleauSummaryService {
         if (stockPage == null) {
             System.out.println("Falling back to StockStatusReportRepository because R100.prn is missing or could not be read.");
             if (rollId != null && !rollId.trim().isEmpty() && itemNumber != null && !itemNumber.trim().isEmpty()) {
-                stockPage = stockStatusReportRepository.findByRefContainingIgnoreCaseAndItemNumberContainingIgnoreCaseAndIsDeletedFalse(rollId, itemNumber, pageable);
+                stockPage = stockStatusReportRepository.findByRefContainingIgnoreCaseAndItemNumberContainingIgnoreCaseAndUmAndIsDeletedFalse(rollId, itemNumber, "MT", pageable);
             } else if (rollId != null && !rollId.trim().isEmpty()) {
-                stockPage = stockStatusReportRepository.findByRefContainingIgnoreCaseAndIsDeletedFalse(rollId, pageable);
+                stockPage = stockStatusReportRepository.findByRefContainingIgnoreCaseAndUmAndIsDeletedFalse(rollId, "MT", pageable);
             } else if (itemNumber != null && !itemNumber.trim().isEmpty()) {
-                stockPage = stockStatusReportRepository.findByItemNumberContainingIgnoreCaseAndIsDeletedFalse(itemNumber, pageable);
+                stockPage = stockStatusReportRepository.findByItemNumberContainingIgnoreCaseAndUmAndIsDeletedFalse(itemNumber, "MT", pageable);
             } else {
-                stockPage = stockStatusReportRepository.findByIsDeletedFalse(pageable);
+                stockPage = stockStatusReportRepository.findByUmAndIsDeletedFalse("MT", pageable);
             }
         }
 
@@ -266,6 +275,105 @@ public class RouleauSummaryService {
             }
 
             dtos.add(dto);
+        }
+
+        // Fetch Consumption logic for dtos
+        List<String> idRouleaux = new ArrayList<>();
+        for (RouleauSummaryDto dto : dtos) {
+            String serialIdForLookup = dto.getSerialId() != null ? dto.getSerialId() : dto.getRollId();
+            if (serialIdForLookup != null && serialIdForLookup.toUpperCase().startsWith("S")) {
+                serialIdForLookup = serialIdForLookup.substring(1);
+            }
+            if (serialIdForLookup != null) {
+                if (!idRouleaux.contains(serialIdForLookup)) idRouleaux.add(serialIdForLookup);
+                
+                String prefix6 = "6" + serialIdForLookup;
+                if (!idRouleaux.contains(prefix6)) idRouleaux.add(prefix6);
+                
+                String prefixS = "S" + serialIdForLookup;
+                if (!idRouleaux.contains(prefixS)) idRouleaux.add(prefixS);
+                
+                String prefixS6 = "S6" + serialIdForLookup;
+                if (!idRouleaux.contains(prefixS6)) idRouleaux.add(prefixS6);
+            }
+        }
+        
+        List<com.lear.MGCMS.domain.CuttingRequest.data.CuttingRequestSerieRouleauData> cuttingDataList = new ArrayList<>();
+        if (!idRouleaux.isEmpty() && cuttingRepo != null) {
+            try {
+                cuttingDataList = cuttingRepo.findByIdRouleaux(idRouleaux);
+            } catch(Exception e) { e.printStackTrace(); }
+        }
+        
+        List<com.lear.pls.domain.ProdTicket> prodTickets = new ArrayList<>();
+        if (!idRouleaux.isEmpty() && prodTicketRepo != null) {
+            try {
+                prodTickets = prodTicketRepo.findObjIdRouleauInThis(idRouleaux);
+            } catch(Exception e) { e.printStackTrace(); }
+        }
+        
+        for (RouleauSummaryDto dto : dtos) {
+            String serialIdForLookup = dto.getSerialId() != null ? dto.getSerialId() : dto.getRollId();
+            if (serialIdForLookup != null && serialIdForLookup.toUpperCase().startsWith("S")) {
+                serialIdForLookup = serialIdForLookup.substring(1);
+            }
+            
+            String finalLookup = serialIdForLookup;
+            
+            List<com.lear.MGCMS.domain.CuttingRequest.data.CuttingRequestSerieRouleauData> rollCuttings = cuttingDataList.stream()
+                .filter(c -> c.getIdRouleau() != null && c.getIdRouleau().endsWith(finalLookup))
+                .sorted((c1, c2) -> c2.getCreatedAt().compareTo(c1.getCreatedAt()))
+                .collect(Collectors.toList());
+                
+            List<com.lear.pls.domain.ProdTicket> rollTickets = prodTickets.stream()
+                .filter(p -> p.getLabelId() != null && p.getLabelId().endsWith(finalLookup))
+                .sorted((p1, p2) -> p2.getCreatedAt().compareTo(p1.getCreatedAt()))
+                .collect(Collectors.toList());
+                
+            Double initialQty = dto.getQtyMeters();
+            Double consumedQty = 0.0;
+            Double remainingQty = initialQty;
+            Double plsQty = 0.0;
+            Boolean isFullyConsumed = false;
+            
+            LocalDateTime latestCutting = rollCuttings.isEmpty() ? null : rollCuttings.get(0).getCreatedAt();
+            LocalDateTime latestTicket = rollTickets.isEmpty() ? null : rollTickets.get(0).getCreatedAt();
+            
+            boolean useTicketAsLatest = false;
+            if (latestTicket != null && latestCutting != null) {
+                useTicketAsLatest = latestTicket.isAfter(latestCutting);
+            } else if (latestTicket != null) {
+                useTicketAsLatest = true;
+            }
+            
+            if (useTicketAsLatest) {
+                com.lear.pls.domain.ProdTicket latest = rollTickets.get(0);
+                remainingQty = latest.getQuantity() != null ? latest.getQuantity() : 0.0;
+                plsQty = latest.getQuantitePLS() != null ? latest.getQuantitePLS() : 0.0;
+                
+                if (initialQty != null) {
+                    consumedQty = initialQty - remainingQty;
+                }
+                if (remainingQty <= 0) {
+                    isFullyConsumed = true;
+                }
+            } else if (!rollCuttings.isEmpty()) {
+                com.lear.MGCMS.domain.CuttingRequest.data.CuttingRequestSerieRouleauData latest = rollCuttings.get(0);
+                remainingQty = latest.getRetour() != null ? latest.getRetour() : 0.0;
+                
+                if (Boolean.FALSE.equals(latest.getConfirmRetour()) || remainingQty <= 0) {
+                    isFullyConsumed = true;
+                }
+                
+                if (initialQty != null) {
+                    consumedQty = initialQty - remainingQty;
+                }
+            }
+            
+            dto.setConsumedQty(consumedQty != null ? Math.round(consumedQty * 1000.0) / 1000.0 : 0.0);
+            dto.setRemainingQty(remainingQty != null ? Math.round(remainingQty * 1000.0) / 1000.0 : 0.0);
+            dto.setPlsQty(plsQty != null ? Math.round(plsQty * 1000.0) / 1000.0 : 0.0);
+            dto.setIsFullyConsumed(isFullyConsumed);
         }
 
         return new PageImpl<>(dtos, pageable, stockPage.getTotalElements());

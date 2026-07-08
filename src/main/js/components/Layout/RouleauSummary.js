@@ -4,7 +4,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { 
 	faSearch, 
 	faSpinner,
-	faSync
+	faSync,
+	faCheck,
+	faTimes
 } from '@fortawesome/free-solid-svg-icons'
 
 export default class RouleauSummary extends Component {
@@ -20,7 +22,8 @@ export default class RouleauSummary extends Component {
 			totalElements: 0,
 			
 			searchRollId: '',
-			searchItemNumber: ''
+			searchItemNumber: '',
+			statusFilter: 'ALL'
 		}
 	}
 
@@ -65,6 +68,7 @@ export default class RouleauSummary extends Component {
 		this.setState({
 			searchRollId: '',
 			searchItemNumber: '',
+			statusFilter: 'ALL',
 			currentPage: 0
 		}, this.loadRouleauList);
 	}
@@ -76,7 +80,13 @@ export default class RouleauSummary extends Component {
 	}
 
 	render() {
-		const { rouleauList, loading, currentPage, totalPages, totalElements, searchRollId, searchItemNumber } = this.state;
+		const { rouleauList, loading, currentPage, totalPages, totalElements, searchRollId, searchItemNumber, statusFilter } = this.state;
+		
+		const filteredRouleauList = rouleauList.filter(roll => {
+			if (statusFilter === 'AVAILABLE') return !roll.isFullyConsumed;
+			if (statusFilter === 'CONSUMED') return roll.isFullyConsumed;
+			return true;
+		});
 
 		return (
 			<div className="container-fluid mt-3">
@@ -109,6 +119,18 @@ export default class RouleauSummary extends Component {
 										onChange={(e) => this.setState({ searchItemNumber: e.target.value })}
 									/>
 								</div>
+								<div className="col-sm-3 my-1">
+									<label className="sr-only">Status Filter</label>
+									<select 
+										className="form-control" 
+										value={statusFilter}
+										onChange={(e) => this.setState({ statusFilter: e.target.value })}
+									>
+										<option value="ALL">All Statuses</option>
+										<option value="AVAILABLE">✅ Available</option>
+										<option value="CONSUMED">❌ Fully Consumed</option>
+									</select>
+								</div>
 								<div className="col-auto my-1">
 									<button type="submit" className="btn btn-primary mr-2" disabled={loading}>
 										<FontAwesomeIcon icon={loading ? faSpinner : faSearch} spin={loading} className="mr-1" />
@@ -131,25 +153,38 @@ export default class RouleauSummary extends Component {
 										<th>Serial ID</th>
 										<th>Item Ref</th>
 										<th>Lot</th>
-										<th>Qty (Meters)</th>
+										<th>Quantity</th>
+										<th>PLS Quantity</th>
+										<th>Available</th>
 										<th>Location Type</th>
 										<th>Emplacement</th>
 										<th>R100 Location</th>
 									</tr>
 								</thead>
 								<tbody>
-									{loading && rouleauList.length === 0 ? (
-										<tr><td colSpan="8" className="text-center">Loading...</td></tr>
-									) : rouleauList.length === 0 ? (
-										<tr><td colSpan="8" className="text-center">No rolls found</td></tr>
+									{loading && filteredRouleauList.length === 0 ? (
+										<tr><td colSpan="10" className="text-center">Loading...</td></tr>
+									) : filteredRouleauList.length === 0 ? (
+										<tr><td colSpan="10" className="text-center">No rolls found</td></tr>
 									) : (
-										rouleauList.map((roll, idx) => (
-											<tr key={idx}>
+										filteredRouleauList.map((roll, idx) => {
+											const isFullyConsumed = roll.isFullyConsumed;
+											const rowClass = isFullyConsumed ? "table-danger" : "";
+											return (
+												<tr key={idx} className={rowClass}>
 												<td><strong>{roll.rollId}</strong></td>
 												<td>{roll.serialId || '-'}</td>
 												<td>{roll.itemNumber}</td>
 												<td>{roll.lot || '-'}</td>
-												<td>{roll.qtyMeters}</td>
+												<td>{roll.remainingQty}</td>
+												<td>{roll.plsQty || 0}</td>
+												<td className="text-center">
+													{!isFullyConsumed ? (
+														<FontAwesomeIcon icon={faCheck} className="text-success" />
+													) : (
+														<FontAwesomeIcon icon={faTimes} className="text-danger" />
+													)}
+												</td>
 												<td>
 													{roll.locationType === 'In stock' ? (
 														<span className="badge badge-info">In Stock</span>
@@ -161,8 +196,9 @@ export default class RouleauSummary extends Component {
 												</td>
 												<td>{roll.emplacement || '-'}</td>
 												<td>{roll.r100Location || '-'}</td>
-											</tr>
-										))
+												</tr>
+											);
+										})
 									)}
 								</tbody>
 							</table>

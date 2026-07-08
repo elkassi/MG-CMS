@@ -17,8 +17,8 @@ public interface StockStatusReportRepository extends PagingAndSortingRepository<
     @org.springframework.data.jpa.repository.Query("from StockStatusReport where ref = :ref")
     java.util.List<StockStatusReport> findByRef(String ref);
 
-    Page<StockStatusReport> findByRefContainingIgnoreCaseAndItemNumberContainingIgnoreCaseAndIsDeletedFalse(String ref, String itemNumber, Pageable pageable);
-    Page<StockStatusReport> findByRefContainingIgnoreCaseAndIsDeletedFalse(String ref, Pageable pageable);
-    Page<StockStatusReport> findByItemNumberContainingIgnoreCaseAndIsDeletedFalse(String itemNumber, Pageable pageable);
-    Page<StockStatusReport> findByIsDeletedFalse(Pageable pageable);
+    Page<StockStatusReport> findByRefContainingIgnoreCaseAndItemNumberContainingIgnoreCaseAndUmAndIsDeletedFalse(String ref, String itemNumber, String um, Pageable pageable);
+    Page<StockStatusReport> findByRefContainingIgnoreCaseAndUmAndIsDeletedFalse(String ref, String um, Pageable pageable);
+    Page<StockStatusReport> findByItemNumberContainingIgnoreCaseAndUmAndIsDeletedFalse(String itemNumber, String um, Pageable pageable);
+    Page<StockStatusReport> findByUmAndIsDeletedFalse(String um, Pageable pageable);
 }

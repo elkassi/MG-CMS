@@ -9,6 +9,10 @@ public class RouleauSummaryDto {
     private String locationType; // "In stock", "Not in stock", "In use"
     private String lot;
     private String emplacement;
+    private Double consumedQty;
+    private Double remainingQty;
+    private Boolean isFullyConsumed;
+    private Double plsQty;
 
     public RouleauSummaryDto() {
     }
@@ -22,6 +26,38 @@ public class RouleauSummaryDto {
         this.locationType = locationType;
         this.lot = lot;
         this.emplacement = emplacement;
+    }
+
+    public Double getPlsQty() {
+        return plsQty;
+    }
+
+    public void setPlsQty(Double plsQty) {
+        this.plsQty = plsQty;
+    }
+
+    public Double getConsumedQty() {
+        return consumedQty;
+    }
+
+    public void setConsumedQty(Double consumedQty) {
+        this.consumedQty = consumedQty;
+    }
+
+    public Double getRemainingQty() {
+        return remainingQty;
+    }
+
+    public void setRemainingQty(Double remainingQty) {
+        this.remainingQty = remainingQty;
+    }
+
+    public Boolean getIsFullyConsumed() {
+        return isFullyConsumed;
+    }
+
+    public void setIsFullyConsumed(Boolean fullyConsumed) {
+        isFullyConsumed = fullyConsumed;
     }
 
     public String getRollId() {
