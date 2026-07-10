@@ -17,7 +17,7 @@ export default class RouleauSummary extends Component {
 			rouleauList: [],
 			loading: false,
 			currentPage: 0,
-			itemsPerPage: 20,
+			itemsPerPage: 100,
 			totalPages: 0,
 			totalElements: 0,
 			
@@ -35,7 +35,7 @@ export default class RouleauSummary extends Component {
 		this.setState({ loading: true })
 		
 		try {
-			const { currentPage, itemsPerPage, searchRollId, searchItemNumber } = this.state;
+			const { currentPage, itemsPerPage, searchRollId, searchItemNumber, statusFilter } = this.state;
 			
 			let url = `/api/rouleau-summary/search?page=${currentPage}&size=${itemsPerPage}`;
 			if (searchRollId) {
@@ -43,6 +43,9 @@ export default class RouleauSummary extends Component {
 			}
 			if (searchItemNumber) {
 				url += `&itemNumber=${searchItemNumber}`;
+			}
+			if (statusFilter && statusFilter !== 'ALL') {
+				url += `&status=${statusFilter}`;
 			}
 
 			const response = await axios.get(url);
@@ -82,12 +85,6 @@ export default class RouleauSummary extends Component {
 	render() {
 		const { rouleauList, loading, currentPage, totalPages, totalElements, searchRollId, searchItemNumber, statusFilter } = this.state;
 		
-		const filteredRouleauList = rouleauList.filter(roll => {
-			if (statusFilter === 'AVAILABLE') return !roll.isFullyConsumed;
-			if (statusFilter === 'CONSUMED') return roll.isFullyConsumed;
-			return true;
-		});
-
 		return (
 			<div className="container-fluid mt-3">
 				<div className="card shadow mb-4">
@@ -127,8 +124,10 @@ export default class RouleauSummary extends Component {
 										onChange={(e) => this.setState({ statusFilter: e.target.value })}
 									>
 										<option value="ALL">All Statuses</option>
-										<option value="AVAILABLE">✅ Available</option>
-										<option value="CONSUMED">❌ Fully Consumed</option>
+										<option value="In stock">In stock</option>
+										<option value="In production">In production</option>
+										<option value="Consommé">Consommé</option>
+										<option value="Blocked">Blocked</option>
 									</select>
 								</div>
 								<div className="col-auto my-1">
@@ -152,46 +151,38 @@ export default class RouleauSummary extends Component {
 										<th>Roll ID</th>
 										<th>Serial ID</th>
 										<th>Item Ref</th>
-										<th>Lot</th>
 										<th>Quantity</th>
-										<th>PLS Quantity</th>
-										<th>Available</th>
-										<th>Location Type</th>
+										<th>Status</th>
 										<th>Emplacement</th>
 										<th>R100 Location</th>
 									</tr>
 								</thead>
 								<tbody>
-									{loading && filteredRouleauList.length === 0 ? (
-										<tr><td colSpan="10" className="text-center">Loading...</td></tr>
-									) : filteredRouleauList.length === 0 ? (
-										<tr><td colSpan="10" className="text-center">No rolls found</td></tr>
+									{loading && rouleauList.length === 0 ? (
+										<tr><td colSpan="7" className="text-center">Loading...</td></tr>
+									) : rouleauList.length === 0 ? (
+										<tr><td colSpan="7" className="text-center">No rolls found</td></tr>
 									) : (
-										filteredRouleauList.map((roll, idx) => {
-											const isFullyConsumed = roll.isFullyConsumed;
-											const rowClass = isFullyConsumed ? "table-danger" : "";
+										rouleauList.map((roll, idx) => {
+											let rowClass = "";
+											if (roll.status === "Consommé") rowClass = "table-danger";
+											if (roll.status === "Blocked") rowClass = "table-secondary";
+											
 											return (
 												<tr key={idx} className={rowClass}>
 												<td><strong>{roll.rollId}</strong></td>
 												<td>{roll.serialId || '-'}</td>
 												<td>{roll.itemNumber}</td>
-												<td>{roll.lot || '-'}</td>
-												<td>{roll.remainingQty}</td>
-												<td>{roll.plsQty || 0}</td>
-												<td className="text-center">
-													{!isFullyConsumed ? (
-														<FontAwesomeIcon icon={faCheck} className="text-success" />
-													) : (
-														<FontAwesomeIcon icon={faTimes} className="text-danger" />
-													)}
-												</td>
+												<td>{roll.quantity}</td>
 												<td>
-													{roll.locationType === 'In stock' ? (
-														<span className="badge badge-info">In Stock</span>
-													) : roll.locationType === 'In use' ? (
-														<span className="badge badge-warning">In Use</span>
+													{roll.status === 'In stock' ? (
+														<span className="badge badge-info">In stock</span>
+													) : roll.status === 'In production' ? (
+														<span className="badge badge-warning">In production</span>
+													) : roll.status === 'Consommé' ? (
+														<span className="badge badge-danger">Consommé</span>
 													) : (
-														<span className="badge badge-secondary">{roll.locationType || 'Not In Stock'}</span>
+														<span className="badge badge-dark">Blocked</span>
 													)}
 												</td>
 												<td>{roll.emplacement || '-'}</td>

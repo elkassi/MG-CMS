@@ -218,9 +218,7 @@ public class StockStatusReportService {
                 if (ref.isEmpty() || qtyStr.isEmpty() || !location.toUpperCase().startsWith("T0") || !um.equalsIgnoreCase("MT")) {
                     continue;
                 }
-                if (!statusStr.equalsIgnoreCase("AVAIL2")) {
-                    continue;
-                }
+// Removed AVAIL2 filter to allow Blocked rolls
                 if (!refTissus.contains(itemNumber)) {
                     continue;
                 }
@@ -299,9 +297,7 @@ public class StockStatusReportService {
                 if (ref.isEmpty() || qtyStr.isEmpty() || !location.toUpperCase().startsWith("T0") || !um.equalsIgnoreCase("MT")) {
                     continue;
                 }
-                if (!statusStr.equalsIgnoreCase("AVAIL2")) {
-                    continue;
-                }
+// Removed AVAIL2 filter to allow Blocked rolls
                 double qty = 0.0;
                 try {
                     qty = Double.parseDouble(qtyStr);

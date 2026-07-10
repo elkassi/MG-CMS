@@ -157,16 +157,16 @@ public class RouleauSummaryService {
         }
     }
 
-    private Page<StockStatusReport> getStockPageFromR100(int page, int size, String rollId, String itemNumber) {
+    private List<StockStatusReport> getFilteredStockListFromR100(String rollId, String itemNumber) {
         List<StockStatusReport> allData = getR100Data();
         if (allData == null) {
-            return null; // Trigger DB fallback
+            return null;
         }
         
         boolean hasRollId = rollId != null && !rollId.trim().isEmpty();
         boolean hasItemNumber = itemNumber != null && !itemNumber.trim().isEmpty();
         
-        List<StockStatusReport> filtered = allData.stream().filter(st -> {
+        return allData.stream().filter(st -> {
             if (st.getUm() == null || !st.getUm().trim().equalsIgnoreCase("MT")) return false;
             boolean match = true;
             if (hasRollId && (st.getRef() == null || !st.getRef().toLowerCase().contains(rollId.toLowerCase()))) {
@@ -177,62 +177,131 @@ public class RouleauSummaryService {
             }
             return match;
         }).collect(Collectors.toList());
-        
-        int start = Math.min(page * size, filtered.size());
-        int end = Math.min(start + size, filtered.size());
-        List<StockStatusReport> pageContent = filtered.subList(start, end);
-        
-        return new PageImpl<>(pageContent, PageRequest.of(page, size), filtered.size());
     }
 
-    public Page<RouleauSummaryDto> getRouleauSummary(int page, int size, String rollId, String itemNumber) {
+    public Page<RouleauSummaryDto> getRouleauSummary(int page, int size, String rollId, String itemNumber, String statusFilter) {
+        long startTime = System.currentTimeMillis();
         Pageable pageable = PageRequest.of(page, size);
-        Page<StockStatusReport> stockPage = getStockPageFromR100(page, size, rollId, itemNumber);
+        List<StockStatusReport> stockList = getFilteredStockListFromR100(rollId, itemNumber);
         
         // DB Fallback if R100.prn is missing
-        if (stockPage == null) {
-            System.out.println("Falling back to StockStatusReportRepository because R100.prn is missing or could not be read.");
+        if (stockList == null) {
+            System.out.println("Falling back to DB");
+            Page<StockStatusReport> fallbackPage;
             if (rollId != null && !rollId.trim().isEmpty() && itemNumber != null && !itemNumber.trim().isEmpty()) {
-                stockPage = stockStatusReportRepository.findByRefContainingIgnoreCaseAndItemNumberContainingIgnoreCaseAndUmAndIsDeletedFalse(rollId, itemNumber, "MT", pageable);
+                fallbackPage = stockStatusReportRepository.findByRefContainingIgnoreCaseAndItemNumberContainingIgnoreCaseAndUmAndIsDeletedFalse(rollId, itemNumber, "MT", PageRequest.of(0, 10000));
             } else if (rollId != null && !rollId.trim().isEmpty()) {
-                stockPage = stockStatusReportRepository.findByRefContainingIgnoreCaseAndUmAndIsDeletedFalse(rollId, "MT", pageable);
+                fallbackPage = stockStatusReportRepository.findByRefContainingIgnoreCaseAndUmAndIsDeletedFalse(rollId, "MT", PageRequest.of(0, 10000));
             } else if (itemNumber != null && !itemNumber.trim().isEmpty()) {
-                stockPage = stockStatusReportRepository.findByItemNumberContainingIgnoreCaseAndUmAndIsDeletedFalse(itemNumber, "MT", pageable);
+                fallbackPage = stockStatusReportRepository.findByItemNumberContainingIgnoreCaseAndUmAndIsDeletedFalse(itemNumber, "MT", PageRequest.of(0, 10000));
             } else {
-                stockPage = stockStatusReportRepository.findByUmAndIsDeletedFalse("MT", pageable);
+                fallbackPage = stockStatusReportRepository.findByUmAndIsDeletedFalse("MT", PageRequest.of(0, 10000));
             }
+            stockList = fallbackPage.getContent();
         }
+        System.out.println("Time to load stockList: " + (System.currentTimeMillis() - startTime) + "ms. Size: " + stockList.size());
 
+        long t1 = System.currentTimeMillis();
         // Build lookup maps
         Map<String, List<ScanRouleau>> scanMap = buildScanRouleauMap();
         Map<String, SerieRouleauTemp> inUseMap = buildInUseMap();
+        System.out.println("Time to build lookups: " + (System.currentTimeMillis() - t1) + "ms");
 
+        boolean filterIsAll = (statusFilter == null || statusFilter.trim().isEmpty() || statusFilter.equalsIgnoreCase("All"));
+        
+        // If the filter is ALL, we can slice the stockList FIRST and only process those 100 items!
+        List<StockStatusReport> itemsToProcess = stockList;
+        if (filterIsAll) {
+            int start = Math.min(page * size, stockList.size());
+            int end = Math.min(start + size, stockList.size());
+            itemsToProcess = stockList.subList(start, end);
+        }
+
+        long t2 = System.currentTimeMillis();
+        // Collect IDs to fetch consumption using HashSet for O(1) deduplication
+        Set<String> idRouleauxSet = new HashSet<>();
+        for (StockStatusReport st : itemsToProcess) {
+            String sid = st.getRef();
+            if (sid != null) {
+                if (sid.toUpperCase().startsWith("S")) {
+                    sid = sid.substring(1);
+                }
+                idRouleauxSet.add(sid);
+                idRouleauxSet.add("6" + sid);
+                idRouleauxSet.add("S" + sid);
+                idRouleauxSet.add("S6" + sid);
+            }
+        }
+        List<String> idRouleaux = new ArrayList<>(idRouleauxSet);
+        System.out.println("Time to deduplicate IDs: " + (System.currentTimeMillis() - t2) + "ms. Process size: " + itemsToProcess.size());
+
+        long t3 = System.currentTimeMillis();
+        // Partition ID list for IN clause limit (max 2100 in SQL Server)
+        List<com.lear.MGCMS.domain.CuttingRequest.data.CuttingRequestSerieRouleauData> cuttingDataList = new ArrayList<>();
+        List<com.lear.pls.domain.ProdTicket> prodTickets = new ArrayList<>();
+        
+        if (!idRouleaux.isEmpty()) {
+            for (int i = 0; i < idRouleaux.size(); i += 2000) {
+                List<String> partition = idRouleaux.subList(i, Math.min(i + 2000, idRouleaux.size()));
+                if (cuttingRepo != null) {
+                    try { cuttingDataList.addAll(cuttingRepo.findByIdRouleaux(partition)); } catch(Exception e) {}
+                }
+                if (prodTicketRepo != null) {
+                    try { prodTickets.addAll(prodTicketRepo.findObjIdRouleauInThis(partition)); } catch(Exception e) {}
+                }
+            }
+        }
+        System.out.println("Time to fetch DB records: " + (System.currentTimeMillis() - t3) + "ms. CuttingData size: " + cuttingDataList.size() + ", ProdTickets size: " + prodTickets.size());
+
+        long t4 = System.currentTimeMillis();
+        // Pre-build lookup maps to prevent O(N*M) performance issues
+        Map<String, List<com.lear.MGCMS.domain.CuttingRequest.data.CuttingRequestSerieRouleauData>> cuttingMap = new HashMap<>();
+        for(com.lear.MGCMS.domain.CuttingRequest.data.CuttingRequestSerieRouleauData c : cuttingDataList) {
+            String cId = c.getIdRouleau();
+            if (cId != null) {
+                if (cId.toUpperCase().startsWith("S")) cId = cId.substring(1);
+                if (cId.startsWith("6")) cId = cId.substring(1);
+                cuttingMap.computeIfAbsent(cId, k -> new ArrayList<>()).add(c);
+            }
+        }
+        
+        Map<String, List<com.lear.pls.domain.ProdTicket>> ticketMap = new HashMap<>();
+        for(com.lear.pls.domain.ProdTicket p : prodTickets) {
+            String pId = p.getLabelId();
+            if (pId != null) {
+                if (pId.toUpperCase().startsWith("S")) pId = pId.substring(1);
+                if (pId.startsWith("6")) pId = pId.substring(1);
+                ticketMap.computeIfAbsent(pId, k -> new ArrayList<>()).add(p);
+            }
+        }
+        System.out.println("Time to build DB maps: " + (System.currentTimeMillis() - t4) + "ms");
+
+        long t5 = System.currentTimeMillis();
         List<RouleauSummaryDto> dtos = new ArrayList<>();
 
-        for (StockStatusReport st : stockPage.getContent()) {
+        for (StockStatusReport st : itemsToProcess) {
             RouleauSummaryDto dto = new RouleauSummaryDto();
             dto.setRollId(st.getRef());
             dto.setItemNumber(st.getItemNumber());
-            dto.setQtyMeters(st.getQtyOnHand());
             dto.setR100Location(st.getLocation());
+            dto.setIsFullyConsumed(false);
+            
+            Double currentQty = st.getQtyOnHand() != null ? st.getQtyOnHand() : 0.0;
+            String r100Status = st.getStatus() != null ? st.getStatus().trim() : "";
+            LocalDateTime latestEventTime = LocalDateTime.MIN;
+            String currentEmplacement = null;
 
             // --- Join with ScanRouleau ---
             String normalizedItemNumber = st.getItemNumber() != null ? st.getItemNumber().trim() : "";
             List<ScanRouleau> matchingScans = scanMap.get(normalizedItemNumber);
+            ScanRouleau bestMatch = null;
             if (matchingScans != null && !matchingScans.isEmpty()) {
-                // Try to find best match by metrage/qtyOnHand
-                ScanRouleau bestMatch = null;
                 for (ScanRouleau sc : matchingScans) {
                     Double scanQty = sc.getMetrage();
                     if (scanQty == null) {
-                        try {
-                            scanQty = Double.parseDouble(sc.getQuantite());
-                        } catch (Exception e) {
-                            scanQty = null;
-                        }
+                        try { scanQty = Double.parseDouble(sc.getQuantite()); } catch (Exception e) {}
                     }
-                    if (scanQty != null && st.getQtyOnHand() != null 
-                            && Math.abs(scanQty - st.getQtyOnHand()) < 0.01) {
+                    if (scanQty != null && st.getQtyOnHand() != null && Math.abs(scanQty - st.getQtyOnHand()) < 0.01) {
                         bestMatch = sc;
                         break;
                     }
@@ -241,101 +310,70 @@ public class RouleauSummaryService {
                     bestMatch = matchingScans.get(0);
                 }
                 
-                dto.setSerialId(bestMatch.getSerialId());
-                dto.setLot(bestMatch.getLot());
-                dto.setEmplacement(bestMatch.getEmplacement());
-            }
-
-            // --- Determine Location Type ---
-            String serialIdForLookup = dto.getSerialId();
-            if (serialIdForLookup != null && serialIdForLookup.toUpperCase().startsWith("S")) {
-                serialIdForLookup = serialIdForLookup.substring(1);
-            }
-            
-            SerieRouleauTemp inUseEntry = null;
-            if (serialIdForLookup != null) {
-                inUseEntry = inUseMap.get(serialIdForLookup);
-            }
-
-            if (inUseEntry != null) {
-                dto.setLocationType("In use");
-                // Show which table it's on
-                if (inUseEntry.getTableMatelassage() != null) {
-                    dto.setEmplacement("Table: " + inUseEntry.getTableMatelassage());
+                String scanSerial = bestMatch.getSerialId();
+                if (scanSerial != null && scanSerial.toUpperCase().startsWith("S")) {
+                    dto.setSerialId(scanSerial);
                 }
-            } else if (!Boolean.TRUE.equals(st.getIsDeleted()) &&
-                    (st.getStatus() != null && 
-                     (st.getStatus().equalsIgnoreCase("AVAIL") || st.getStatus().equalsIgnoreCase("AVAIL2")))) {
-                dto.setLocationType("In stock");
-            } else {
-                dto.setLocationType("Not in stock");
-                // User requested: "if the Location Type not instock then he will be in Emplacement"
-                // For "INSPECT" and "TRANSI" etc., show it in the Emplacement column
-                dto.setEmplacement(st.getStatus());
+                dto.setLot(bestMatch.getLot());
+                
+                if (bestMatch.getDate() != null && bestMatch.getDate().isAfter(latestEventTime)) {
+                    latestEventTime = bestMatch.getDate();
+                    currentEmplacement = bestMatch.getEmplacement();
+                }
             }
 
-            dtos.add(dto);
-        }
-
-        // Fetch Consumption logic for dtos
-        List<String> idRouleaux = new ArrayList<>();
-        for (RouleauSummaryDto dto : dtos) {
-            String serialIdForLookup = dto.getSerialId() != null ? dto.getSerialId() : dto.getRollId();
+            // --- Join with SerieRouleauTemp (Active on table) ---
+            String serialIdForLookup = dto.getSerialId();
+            if (serialIdForLookup == null) {
+                serialIdForLookup = st.getRef();
+            }
             if (serialIdForLookup != null && serialIdForLookup.toUpperCase().startsWith("S")) {
                 serialIdForLookup = serialIdForLookup.substring(1);
             }
+            
+            SerieRouleauTemp inUseEntry = serialIdForLookup != null ? inUseMap.get(serialIdForLookup) : null;
+            if (inUseEntry != null) {
+                if (inUseEntry.getDate() != null && inUseEntry.getDate().isAfter(latestEventTime)) {
+                    latestEventTime = inUseEntry.getDate();
+                } else if (latestEventTime == LocalDateTime.MIN) {
+                    latestEventTime = LocalDateTime.now();
+                }
+                if (inUseEntry.getTableMatelassage() != null) {
+                    currentEmplacement = "Table: " + inUseEntry.getTableMatelassage();
+                }
+            }
+
+            // --- Join with Consumption Data ---
+            List<com.lear.MGCMS.domain.CuttingRequest.data.CuttingRequestSerieRouleauData> rollCuttings = new ArrayList<>();
+            List<com.lear.pls.domain.ProdTicket> rollTickets = new ArrayList<>();
+            
             if (serialIdForLookup != null) {
-                if (!idRouleaux.contains(serialIdForLookup)) idRouleaux.add(serialIdForLookup);
+                String lookupKey = serialIdForLookup;
+                if (lookupKey.startsWith("6")) lookupKey = lookupKey.substring(1);
                 
-                String prefix6 = "6" + serialIdForLookup;
-                if (!idRouleaux.contains(prefix6)) idRouleaux.add(prefix6);
+                List<com.lear.MGCMS.domain.CuttingRequest.data.CuttingRequestSerieRouleauData> listC = cuttingMap.get(lookupKey);
+                if (listC != null) {
+                    rollCuttings = new ArrayList<>(listC);
+                    rollCuttings.sort((c1, c2) -> {
+                        if (c1.getCreatedAt() == null && c2.getCreatedAt() == null) return 0;
+                        if (c1.getCreatedAt() == null) return 1;
+                        if (c2.getCreatedAt() == null) return -1;
+                        return c2.getCreatedAt().compareTo(c1.getCreatedAt());
+                    });
+                }
                 
-                String prefixS = "S" + serialIdForLookup;
-                if (!idRouleaux.contains(prefixS)) idRouleaux.add(prefixS);
-                
-                String prefixS6 = "S6" + serialIdForLookup;
-                if (!idRouleaux.contains(prefixS6)) idRouleaux.add(prefixS6);
+                List<com.lear.pls.domain.ProdTicket> listP = ticketMap.get(lookupKey);
+                if (listP != null) {
+                    rollTickets = new ArrayList<>(listP);
+                    rollTickets.sort((p1, p2) -> {
+                        if (p1.getCreatedAt() == null && p2.getCreatedAt() == null) return 0;
+                        if (p1.getCreatedAt() == null) return 1;
+                        if (p2.getCreatedAt() == null) return -1;
+                        return p2.getCreatedAt().compareTo(p1.getCreatedAt());
+                    });
+                }
             }
-        }
-        
-        List<com.lear.MGCMS.domain.CuttingRequest.data.CuttingRequestSerieRouleauData> cuttingDataList = new ArrayList<>();
-        if (!idRouleaux.isEmpty() && cuttingRepo != null) {
-            try {
-                cuttingDataList = cuttingRepo.findByIdRouleaux(idRouleaux);
-            } catch(Exception e) { e.printStackTrace(); }
-        }
-        
-        List<com.lear.pls.domain.ProdTicket> prodTickets = new ArrayList<>();
-        if (!idRouleaux.isEmpty() && prodTicketRepo != null) {
-            try {
-                prodTickets = prodTicketRepo.findObjIdRouleauInThis(idRouleaux);
-            } catch(Exception e) { e.printStackTrace(); }
-        }
-        
-        for (RouleauSummaryDto dto : dtos) {
-            String serialIdForLookup = dto.getSerialId() != null ? dto.getSerialId() : dto.getRollId();
-            if (serialIdForLookup != null && serialIdForLookup.toUpperCase().startsWith("S")) {
-                serialIdForLookup = serialIdForLookup.substring(1);
-            }
-            
-            String finalLookup = serialIdForLookup;
-            
-            List<com.lear.MGCMS.domain.CuttingRequest.data.CuttingRequestSerieRouleauData> rollCuttings = cuttingDataList.stream()
-                .filter(c -> c.getIdRouleau() != null && c.getIdRouleau().endsWith(finalLookup))
-                .sorted((c1, c2) -> c2.getCreatedAt().compareTo(c1.getCreatedAt()))
-                .collect(Collectors.toList());
                 
-            List<com.lear.pls.domain.ProdTicket> rollTickets = prodTickets.stream()
-                .filter(p -> p.getLabelId() != null && p.getLabelId().endsWith(finalLookup))
-                .sorted((p1, p2) -> p2.getCreatedAt().compareTo(p1.getCreatedAt()))
-                .collect(Collectors.toList());
-                
-            Double initialQty = dto.getQtyMeters();
-            Double consumedQty = 0.0;
-            Double remainingQty = initialQty;
-            Double plsQty = 0.0;
-            Boolean isFullyConsumed = false;
-            
             LocalDateTime latestCutting = rollCuttings.isEmpty() ? null : rollCuttings.get(0).getCreatedAt();
             LocalDateTime latestTicket = rollTickets.isEmpty() ? null : rollTickets.get(0).getCreatedAt();
             
@@ -346,36 +384,71 @@ public class RouleauSummaryService {
                 useTicketAsLatest = true;
             }
             
+            boolean isFullyConsumedFlag = false;
+            
             if (useTicketAsLatest) {
                 com.lear.pls.domain.ProdTicket latest = rollTickets.get(0);
-                remainingQty = latest.getQuantity() != null ? latest.getQuantity() : 0.0;
-                plsQty = latest.getQuantitePLS() != null ? latest.getQuantitePLS() : 0.0;
-                
-                if (initialQty != null) {
-                    consumedQty = initialQty - remainingQty;
+                if (latest.getCreatedAt() != null && latest.getCreatedAt().isAfter(latestEventTime)) {
+                    latestEventTime = latest.getCreatedAt();
+                    currentQty = latest.getQuantity() != null ? latest.getQuantity() : 0.0;
                 }
-                if (remainingQty <= 0) {
-                    isFullyConsumed = true;
+                if (currentQty <= 0) {
+                    isFullyConsumedFlag = true;
                 }
             } else if (!rollCuttings.isEmpty()) {
                 com.lear.MGCMS.domain.CuttingRequest.data.CuttingRequestSerieRouleauData latest = rollCuttings.get(0);
-                remainingQty = latest.getRetour() != null ? latest.getRetour() : 0.0;
-                
-                if (Boolean.FALSE.equals(latest.getConfirmRetour()) || remainingQty <= 0) {
-                    isFullyConsumed = true;
+                if (latest.getCreatedAt() != null && latest.getCreatedAt().isAfter(latestEventTime)) {
+                    latestEventTime = latest.getCreatedAt();
+                    currentQty = latest.getRetour() != null ? latest.getRetour() : 0.0;
+                    if (latest.getLocation() != null && !latest.getLocation().isEmpty()) {
+                        currentEmplacement = latest.getLocation();
+                    }
                 }
-                
-                if (initialQty != null) {
-                    consumedQty = initialQty - remainingQty;
+                if (Boolean.FALSE.equals(latest.getConfirmRetour()) || currentQty <= 0) {
+                    isFullyConsumedFlag = true;
                 }
             }
             
-            dto.setConsumedQty(consumedQty != null ? Math.round(consumedQty * 1000.0) / 1000.0 : 0.0);
-            dto.setRemainingQty(remainingQty != null ? Math.round(remainingQty * 1000.0) / 1000.0 : 0.0);
-            dto.setPlsQty(plsQty != null ? Math.round(plsQty * 1000.0) / 1000.0 : 0.0);
-            dto.setIsFullyConsumed(isFullyConsumed);
+            String finalStatus = "In stock";
+            if (isFullyConsumedFlag || currentQty <= 0) {
+                finalStatus = "Consommé";
+                dto.setIsFullyConsumed(true);
+            } else if (latestEventTime.isAfter(LocalDateTime.MIN)) {
+                finalStatus = "In production";
+            } else {
+                if (!r100Status.equalsIgnoreCase("AVAIL") && !r100Status.equalsIgnoreCase("AVAIL2")) {
+                    finalStatus = "Blocked";
+                }
+            }
+            
+            if (finalStatus.equals("In stock") || finalStatus.equals("Blocked")) {
+                currentEmplacement = null;
+            } else {
+                dto.setR100Location(null);
+            }
+            
+            dto.setQuantity(Math.round(currentQty * 1000.0) / 1000.0);
+            dto.setEmplacement(currentEmplacement);
+            dto.setStatus(finalStatus);
+            
+            if (filterIsAll || statusFilter.equalsIgnoreCase(finalStatus)) {
+                dtos.add(dto);
+            }
+        }
+        System.out.println("Time to map results: " + (System.currentTimeMillis() - t5) + "ms. Total DTOs: " + dtos.size());
+        
+        long t6 = System.currentTimeMillis();
+        List<RouleauSummaryDto> pagedDtos;
+        if (filterIsAll) {
+            pagedDtos = dtos;
+        } else {
+            int start = Math.min(page * size, dtos.size());
+            int end = Math.min(start + size, dtos.size());
+            pagedDtos = dtos.subList(start, end);
         }
 
-        return new PageImpl<>(dtos, pageable, stockPage.getTotalElements());
+        PageImpl<RouleauSummaryDto> result = new PageImpl<>(pagedDtos, pageable, filterIsAll ? stockList.size() : dtos.size());
+        System.out.println("Total Time: " + (System.currentTimeMillis() - startTime) + "ms");
+        return result;
     }
 }

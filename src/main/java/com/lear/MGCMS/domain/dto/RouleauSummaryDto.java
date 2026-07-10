@@ -4,60 +4,25 @@ public class RouleauSummaryDto {
     private String rollId;
     private String serialId;
     private String itemNumber;
-    private Double qtyMeters;
-    private String r100Location;
-    private String locationType; // "In stock", "Not in stock", "In use"
+    private Double quantity;
+    private String status; // "Blocked", "Consommé", "In stock", "In production"
     private String lot;
     private String emplacement;
-    private Double consumedQty;
-    private Double remainingQty;
-    private Boolean isFullyConsumed;
-    private Double plsQty;
+    private String r100Location;
+    private Boolean isFullyConsumed; // keeping this just in case, though status="Consommé" covers it
 
     public RouleauSummaryDto() {
     }
 
-    public RouleauSummaryDto(String rollId, String serialId, String itemNumber, Double qtyMeters, String r100Location, String locationType, String lot, String emplacement) {
+    public RouleauSummaryDto(String rollId, String serialId, String itemNumber, Double quantity, String status, String lot, String emplacement, String r100Location) {
         this.rollId = rollId;
         this.serialId = serialId;
         this.itemNumber = itemNumber;
-        this.qtyMeters = qtyMeters;
-        this.r100Location = r100Location;
-        this.locationType = locationType;
+        this.quantity = quantity;
+        this.status = status;
         this.lot = lot;
         this.emplacement = emplacement;
-    }
-
-    public Double getPlsQty() {
-        return plsQty;
-    }
-
-    public void setPlsQty(Double plsQty) {
-        this.plsQty = plsQty;
-    }
-
-    public Double getConsumedQty() {
-        return consumedQty;
-    }
-
-    public void setConsumedQty(Double consumedQty) {
-        this.consumedQty = consumedQty;
-    }
-
-    public Double getRemainingQty() {
-        return remainingQty;
-    }
-
-    public void setRemainingQty(Double remainingQty) {
-        this.remainingQty = remainingQty;
-    }
-
-    public Boolean getIsFullyConsumed() {
-        return isFullyConsumed;
-    }
-
-    public void setIsFullyConsumed(Boolean fullyConsumed) {
-        isFullyConsumed = fullyConsumed;
+        this.r100Location = r100Location;
     }
 
     public String getRollId() {
@@ -84,28 +49,20 @@ public class RouleauSummaryDto {
         this.itemNumber = itemNumber;
     }
 
-    public Double getQtyMeters() {
-        return qtyMeters;
+    public Double getQuantity() {
+        return quantity;
     }
 
-    public void setQtyMeters(Double qtyMeters) {
-        this.qtyMeters = qtyMeters;
+    public void setQuantity(Double quantity) {
+        this.quantity = quantity;
     }
 
-    public String getR100Location() {
-        return r100Location;
+    public String getStatus() {
+        return status;
     }
 
-    public void setR100Location(String r100Location) {
-        this.r100Location = r100Location;
-    }
-
-    public String getLocationType() {
-        return locationType;
-    }
-
-    public void setLocationType(String locationType) {
-        this.locationType = locationType;
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public String getLot() {
@@ -122,5 +79,21 @@ public class RouleauSummaryDto {
 
     public void setEmplacement(String emplacement) {
         this.emplacement = emplacement;
+    }
+
+    public String getR100Location() {
+        return r100Location;
+    }
+
+    public void setR100Location(String r100Location) {
+        this.r100Location = r100Location;
+    }
+
+    public Boolean getIsFullyConsumed() {
+        return isFullyConsumed;
+    }
+
+    public void setIsFullyConsumed(Boolean isFullyConsumed) {
+        this.isFullyConsumed = isFullyConsumed;
     }
 }

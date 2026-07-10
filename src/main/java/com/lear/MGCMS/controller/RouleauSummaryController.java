@@ -36,9 +36,10 @@ public class RouleauSummaryController {
     public Page<RouleauSummaryDto> search(
             @RequestParam(value = "rollId", required = false) String rollId,
             @RequestParam(value = "itemNumber", required = false) String itemNumber,
+            @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "page", defaultValue = "0", required = false) int page,
-            @RequestParam(value = "size", defaultValue = "20", required = false) int size
+            @RequestParam(value = "size", defaultValue = "100", required = false) int size
     ) {
-        return service.getRouleauSummary(page, size, rollId, itemNumber);
+        return service.getRouleauSummary(page, size, rollId, itemNumber, status);
     }
 }
