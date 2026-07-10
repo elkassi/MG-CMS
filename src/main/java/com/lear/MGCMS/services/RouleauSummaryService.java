@@ -435,6 +435,24 @@ public class RouleauSummaryService {
                 dto.setR100Location(null);
             }
             
+            // --- Override Serial ID with whole ID ---
+            String wholeId = null;
+            if (!rollCuttings.isEmpty()) {
+                wholeId = rollCuttings.get(0).getIdRouleau();
+            } else if (!rollTickets.isEmpty()) {
+                wholeId = rollTickets.get(0).getLabelId();
+            } else if (bestMatch != null && bestMatch.getSerialId() != null) {
+                wholeId = bestMatch.getSerialId();
+            }
+            
+            if (wholeId != null) {
+                wholeId = wholeId.trim();
+                if (wholeId.toUpperCase().startsWith("S")) {
+                    wholeId = wholeId.substring(1);
+                }
+                dto.setSerialId(wholeId);
+            }
+            
             dto.setQuantity(Math.round(currentQty * 1000.0) / 1000.0);
             dto.setEmplacement(currentEmplacement);
             dto.setStatus(finalStatus);
