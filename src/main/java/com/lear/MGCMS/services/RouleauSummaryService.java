@@ -413,6 +413,14 @@ public class RouleauSummaryService {
             if (isFullyConsumedFlag || currentQty <= 0) {
                 finalStatus = "Consommé";
                 dto.setIsFullyConsumed(true);
+                
+                currentQty = 0.0;
+                if (!rollCuttings.isEmpty()) {
+                    Double exc = rollCuttings.get(0).getExcess();
+                    if (exc != null) {
+                        currentQty = exc;
+                    }
+                }
             } else if (latestEventTime.isAfter(LocalDateTime.MIN)) {
                 finalStatus = "In production";
             } else {
