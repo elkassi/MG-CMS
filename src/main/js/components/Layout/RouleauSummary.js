@@ -153,15 +153,14 @@ export default class RouleauSummary extends Component {
 										<th>Item Ref</th>
 										<th>Quantity</th>
 										<th>Status</th>
-										<th>Emplacement</th>
-										<th>R100 Location</th>
+										<th>Location</th>
 									</tr>
 								</thead>
 								<tbody>
 									{loading && rouleauList.length === 0 ? (
-										<tr><td colSpan="7" className="text-center">Loading...</td></tr>
+										<tr><td colSpan="6" className="text-center">Loading...</td></tr>
 									) : rouleauList.length === 0 ? (
-										<tr><td colSpan="7" className="text-center">No rolls found</td></tr>
+										<tr><td colSpan="6" className="text-center">No rolls found</td></tr>
 									) : (
 										rouleauList.map((roll, idx) => {
 											let rowClass = "";
@@ -185,8 +184,7 @@ export default class RouleauSummary extends Component {
 														<span className="badge badge-dark">Blocked</span>
 													)}
 												</td>
-												<td>{roll.emplacement || '-'}</td>
-												<td>{roll.r100Location || '-'}</td>
+												<td>{roll.location || '-'}</td>
 												</tr>
 											);
 										})

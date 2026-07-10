@@ -283,7 +283,6 @@ public class RouleauSummaryService {
             RouleauSummaryDto dto = new RouleauSummaryDto();
             dto.setRollId(st.getRef());
             dto.setItemNumber(st.getItemNumber());
-            dto.setR100Location(st.getLocation());
             dto.setIsFullyConsumed(false);
             
             Double currentQty = st.getQtyOnHand() != null ? st.getQtyOnHand() : 0.0;
@@ -429,10 +428,15 @@ public class RouleauSummaryService {
                 }
             }
             
+            String unifiedLocation = null;
             if (finalStatus.equals("In stock") || finalStatus.equals("Blocked")) {
-                currentEmplacement = null;
+                unifiedLocation = st.getLocation();
             } else {
-                dto.setR100Location(null);
+                if (currentEmplacement != null && !currentEmplacement.trim().isEmpty()) {
+                    unifiedLocation = currentEmplacement;
+                } else if (useTicketAsLatest && !rollTickets.isEmpty()) {
+                    unifiedLocation = rollTickets.get(0).getTableName();
+                }
             }
             
             // --- Override Serial ID with whole ID ---
@@ -454,7 +458,7 @@ public class RouleauSummaryService {
             }
             
             dto.setQuantity(Math.round(currentQty * 1000.0) / 1000.0);
-            dto.setEmplacement(currentEmplacement);
+            dto.setLocation(unifiedLocation);
             dto.setStatus(finalStatus);
             
             if (filterIsAll || statusFilter.equalsIgnoreCase(finalStatus)) {
