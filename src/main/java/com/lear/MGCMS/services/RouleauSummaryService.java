@@ -449,6 +449,11 @@ public class RouleauSummaryService {
                 wholeId = bestMatch.getSerialId();
             }
             
+            // --- Override Lot for PLS Production ---
+            if (finalStatus.equals("In production") && useTicketAsLatest && !rollTickets.isEmpty()) {
+                dto.setLot(rollTickets.get(0).getLotNr());
+            }
+            
             if (wholeId != null) {
                 wholeId = wholeId.trim();
                 if (wholeId.toUpperCase().startsWith("S")) {

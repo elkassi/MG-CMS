@@ -150,6 +150,7 @@ export default class RouleauSummary extends Component {
 									<tr>
 										<th>Roll ID</th>
 										<th>Serial ID</th>
+										<th>Lot</th>
 										<th>Item Ref</th>
 										<th>Quantity</th>
 										<th>Status</th>
@@ -171,6 +172,7 @@ export default class RouleauSummary extends Component {
 												<tr key={idx} className={rowClass}>
 												<td><strong>{roll.rollId}</strong></td>
 												<td>{roll.serialId || '-'}</td>
+												<td>{roll.lot || '-'}</td>
 												<td>{roll.itemNumber}</td>
 												<td>{roll.quantity}</td>
 												<td>
